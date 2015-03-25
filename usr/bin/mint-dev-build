@@ -10,7 +10,7 @@ class Project:
         self.subprojects = subprojects
 
 projects = []
-projects.append(Project("The entire Cinnamon suite", ["cjs", "cinnamon-desktop", "cinnamon-menus", "cinnamon-translations", "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-control-center", "cinnamon-screensaver", "muffin", "Cinnamon", "nemo"]))
+projects.append(Project("Cinnamon (all sub-projects)", ["cjs", "cinnamon-desktop", "cinnamon-menus", "cinnamon-translations", "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-control-center", "cinnamon-screensaver", "muffin", "Cinnamon", "nemo"]))
 projects.append(Project("cjs", ["cjs"]))
 projects.append(Project("cinnamon-desktop", ["cinnamon-desktop"]))
 projects.append(Project("cinnamon-menus", ["cinnamon-menus"]))
@@ -22,7 +22,13 @@ projects.append(Project("cinnamon-Screensaver", ["cinnamon-screensaver"]))
 projects.append(Project("muffin", ["muffin"]))
 projects.append(Project("cinnamon", ["cinnamon"]))
 projects.append(Project("nemo", ["nemo"]))
-projects.append(Project("MDM", ["mdm"]))
+projects.append(Project("mdm", ["mdm"]))
+
+simple_projects = ['mintupdate', 'mintsources', 'mintlocale', 'mintsystem', 'mintmenu', 'mint-translations', 'mint-common', 'mint-x-icons', 'mintwelcome', 'mintdesktop', 'cinnamon-themes', 'mintstick', 'mintdrivers', 'mintinstall', 'mintnanny', 'mintupload', 'blueberry', 'mint-themes', 'mint-themes-gtk3']
+for simple_project in simple_projects:
+    projects.append(Project(simple_project, [simple_project]))
+
+projects = sorted(projects, key=lambda x: x.name, reverse=False)
 
 ## Check mint-dev-setup ran successfully
 if not os.path.exists("%s/.mint-dev-setup" % user_home):
@@ -53,7 +59,7 @@ while selected_project is None:
     print "Choose the project you'd like to build (note that this will overwrite the version running on your system):"
     print ""
     i = 1
-    while i < len(projects):
+    while i <= len(projects):
         project = projects[i-1]
         print "  %d. %s" % (i, project.name)
         i+=1

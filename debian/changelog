@@ -1,3 +1,14 @@
+mint-dev-tools (1.0.1) rebecca; urgency=medium
+
+  * Added /usr/bin/mint-dev-setup
+  * Added gnome-dbg
+  * Added devhelp and glade
+  * Added more tools
+  * Added mint-dev-build, fixed indentation and a few things in mint-dev-setup
+  * mint-dev-build: Added simple projects, sorted list, don't exlude last element
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 25 Mar 2015 14:59:13 +0100
+
 mint-dev-tools (1.0.0) rebecca; urgency=low
 
   * Initial release

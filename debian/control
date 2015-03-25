@@ -7,6 +7,6 @@ Standards-Version: 3.9.5
 
 Package: mint-dev-tools
 Architecture: all
-Depends: python (>= 2.4), python (<< 3), git, gitk, gitg, meld, sublime-text, devscripts, git-buildpackage, dpkg-dev, debhelper, gnome-dbg, devhelp, glade
+Depends: python (>= 2.4), python (<< 3), git, gitk, gitg, meld, sublime-text, devscripts, git-buildpackage, dpkg-dev, debhelper, gnome-dbg, devhelp, glade, regexxer, pyrenamer, d-feet, gdb, awf, gconf-editor, dconf-editor
 Description: A collection of tools to develop/compile Linux Mint projects
  All you need to develop/compile Linux Mint projects.

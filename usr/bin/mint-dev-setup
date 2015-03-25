@@ -1,0 +1,56 @@
+#!/usr/bin/python
+
+import os, commands
+
+user_home = os.path.expanduser('~')
+
+## Create Sandbox
+while not os.path.exists("%s/Sandbox" % user_home):
+	print ""
+	print " === CREATING A SANDBOX ==="
+	os.system("mkdir -p ~/Sandbox")
+	print "Your Sandbox was created in ~/Sandbox. This is where you'll do all your development."
+
+## Configure Git
+while not os.path.exists("%s/.gitconfig" % user_home):
+	print ""
+	print " === CONFIGURING GIT ==="
+	git_name = raw_input('Enter your GIT username: ').strip()
+	git_email = raw_input('Enter your GIT email: ').strip()
+	os.system("git config --global user.name \"%s\"" % git_name)
+	os.system("git config --global user.email \"%s\"" % git_email)
+
+## Configure SSH
+while not os.path.exists("%s/.ssh/id_rsa.pub" % user_home):
+	print ""
+	print " === CREATING AN SSH KEY (keep pressing enter for default choices) ==="
+	os.system("ssh-keygen")
+	print ""
+	print("This is your public SSH key, you should now login to your Github account and add that key:")
+	print ""
+	os.system("cat ~/.ssh/id_rsa.pub")
+
+## Configure APT source repositories
+while not os.path.exists("/etc/apt/sources.list.d/official-source-repositories.list"):
+	print ""
+	print " === SETTING UP APT SOURCE REPOSITORIES ==="
+	print ""
+	print "You need to tick the option to 'Enable source code repositories' in mintsources."
+	raw_input ("Press ENTER to launch mintsources.")
+	os.system("mintsources")
+
+## Refresh APT cache
+lsb_codename = commands.getoutput("lsb_release -cs").strip()
+while not os.path.exists("/var/lib/apt/lists/extra.linuxmint.com_dists_%s_main_source_Sources" % lsb_codename):
+	print ""
+	print " === REFRESHING APT CACHE ==="
+	print ""
+	raw_input ("Press ENTER to refresh the APT cache.")
+	os.system("apt update")
+
+## Install build-dep for common projects
+print ""
+print " === INSTALLING BUILD DEPENDENCIES FOR COMMON PROJECTS ==="
+print ""
+raw_input ("Press ENTER to install build dependencies for common projects.")
+os.system("apt build-dep cjs cinnamon-desktop cinnamon-menus cinnamon-screensaver cinnamon-control-center cinnamon-session cinnamon-settings-daemon muffin cinnamon nemo mdm")

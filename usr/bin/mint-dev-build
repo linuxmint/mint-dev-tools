@@ -10,7 +10,7 @@ class Project:
         self.subprojects = subprojects
 
 projects = []
-projects.append(Project("Cinnamon (all sub-projects)", ["cjs", "cinnamon-desktop", "cinnamon-menus", "cinnamon-translations", "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-control-center", "cinnamon-screensaver", "muffin", "Cinnamon", "nemo"]))
+projects.append(Project("Cinnamon (all sub-projects)", ["cjs", "cinnamon-desktop", "cinnamon-menus", "cinnamon-translations", "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-control-center", "cinnamon-screensaver", "muffin", "cinnamon", "nemo"]))
 projects.append(Project("cjs", ["cjs"]))
 projects.append(Project("cinnamon-desktop", ["cinnamon-desktop"]))
 projects.append(Project("cinnamon-menus", ["cinnamon-menus"]))

@@ -1,0 +1,93 @@
+#!/usr/bin/python2
+
+import os, sys, commands
+
+lmde_releases = ['debian', 'betsy']
+lmde_specific_packages = ['blueberry', 'debian-system-adjustments', 'firefox-l10n', 'live-installer', 'syslinux-themes-lmde', 'mint-flashplugin']
+ubuntu_specific_packages = ['cinnamon-bluetooth', 'linux-kernel', 'mint-artwork-common', 'mint-info', 'mintdrivers', 'ubuntu-system-adjustments', 'ubiquity-slideshow-mint', 'mint-kernel-info', 'mint-meta-codecs', 'mint-meta', 'mint-upgrade-info', 'syslinux-themes-linuxmint']
+obsolete_packages = ['mint-stylish-addon']
+
+class Package:
+    def __init__(self, name):
+        self.name = name
+        self.version = None
+
+class Release:
+    def __init__(self, name):
+        self.name = name
+        self.packages = []
+        self.is_lmde = (name in lmde_releases)
+
+
+release1 = Release(sys.argv[1])
+release2 = Release(sys.argv[2])
+
+os.system("mkdir -p .compare-releases")
+os.system("rm -rf .compare-releases/*")
+
+for release in [release1, release2]:
+    os.system("wget -O .compare-releases/sources.gz http://packages.linuxmint.com/dists/%s/main/source/Sources.gz 2> /dev/null" % release.name)
+    os.system("gzip -d .compare-releases/sources.gz")
+    os.system("mv .compare-releases/sources .compare-releases/%s" % release.name)
+
+    with open(".compare-releases/%s" % release.name, 'r') as source_file:
+        package = None
+        for line in source_file:
+            line = line.strip()
+            if line.startswith("Package: "):
+                name = line.replace("Package: ", "")
+                package = Package(name)
+                release.packages.append(package)
+            elif line.startswith("Version: "):
+                version = line.replace("Version: ", "")
+                package.version = version
+
+os.system("rm -rf .compare-releases")
+
+# Find packages missing in release1
+for package in release1.packages:
+    if package.name in obsolete_packages:
+        continue
+
+    if release1.is_lmde and not release2.is_lmde:
+        # ignore LMDE-specific packages
+        if package.name in lmde_specific_packages:
+            continue
+
+        # ignore debian/lmde packages are they're not supported in Mint
+        found_keyword = False
+        for keyword in ['debian', 'lmde']:
+            if keyword in package.name:
+                found_keyword = True
+                break
+        if found_keyword:
+            continue
+
+    if not release1.is_lmde and release2.is_lmde:
+        # ignore Mint/Ubuntu-specific packages
+        if package.name in ubuntu_specific_packages:
+            continue
+
+        # ignore KDE/Xfce packages are they're not supported in LMDE
+        found_keyword = False
+        for keyword in ['kde', 'xfce', 'kcm']:
+            if keyword in package.name:
+                found_keyword = True
+                break
+        if found_keyword:
+            continue
+
+    equivalent_package = None
+    for package2 in release2.packages:
+        if package2.name == package.name:
+            equivalent_package = package2
+            break
+    if equivalent_package is None:
+        print "Package %s is missing in %s" % (package.name, release2.name)
+    else:
+        # Compare versions
+        version1 = package.version.replace("+%s" % release1.name, "")
+        version2 = equivalent_package.version.replace("+%s" % release2.name, "")
+        output = commands.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
+        if (output == 'NOK'):
+            print "Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version)

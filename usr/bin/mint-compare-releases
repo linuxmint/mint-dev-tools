@@ -4,7 +4,7 @@ import os, sys, commands
 
 lmde_releases = ['debian', 'betsy']
 lmde_specific_packages = ['blueberry', 'debian-system-adjustments', 'firefox-l10n', 'live-installer', 'syslinux-themes-lmde', 'mint-flashplugin']
-ubuntu_specific_packages = ['cinnamon-bluetooth', 'linux-kernel', 'mint-artwork-common', 'mint-info', 'mintdrivers', 'ubuntu-system-adjustments', 'ubiquity-slideshow-mint', 'mint-kernel-info', 'mint-meta-codecs', 'mint-meta', 'mint-upgrade-info', 'syslinux-themes-linuxmint']
+ubuntu_specific_packages = ['cinnamon-bluetooth', 'linux-kernel', 'mint-artwork-common', 'mint-info', 'mintdrivers', 'ubuntu-system-adjustments', 'ubiquity-slideshow-mint', 'mint-kernel-info', 'mint-meta-codecs', 'mint-meta', 'mint-upgrade-info', 'syslinux-themes-linuxmint', 'ia32-libs']
 obsolete_packages = ['mint-stylish-addon']
 
 class Package:

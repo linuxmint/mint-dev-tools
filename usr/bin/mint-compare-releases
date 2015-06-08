@@ -54,6 +54,10 @@ for package in release1.packages:
         if package.name in lmde_specific_packages:
             continue
 
+        # ignore GTK3-related packages
+        if package.name in ['mint-themes-gtk3']:
+            continue
+
         # ignore debian/lmde packages are they're not supported in Mint
         found_keyword = False
         for keyword in ['debian', 'lmde']:
@@ -66,6 +70,10 @@ for package in release1.packages:
     if not release1.is_lmde and release2.is_lmde:
         # ignore Mint/Ubuntu-specific packages
         if package.name in ubuntu_specific_packages:
+            continue
+
+        # ignore GTK3-related packages
+        if package.name in ['mint-themes-gtk3']:
             continue
 
         # ignore KDE/Xfce packages are they're not supported in LMDE

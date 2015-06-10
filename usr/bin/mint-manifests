@@ -1,0 +1,63 @@
+#!/usr/bin/python2
+
+import os, sys, commands
+
+class Package:
+    def __init__(self, name, version):
+        self.name = name
+        self.version = version
+
+class Release:
+    def __init__(self, name):
+        self.name = name
+        self.packages = []
+        self.package_names = []
+        self.specific_names =  []
+
+if len(sys.argv) != 3:
+    print ""
+    print "Usage: mint-manifests release1 release2"
+    print ""
+    print "Available releases: "
+    for path in os.listdir("/usr/share/mint-dev-tools/manifests"):
+        print "   %s" % path
+    print ""
+    sys.exit(1)
+
+release1 = Release(sys.argv[1])
+release2 = Release(sys.argv[2])
+
+for release in [release1, release2]:
+    release_prefix = release.name.split("-")[0]
+    with open("/usr/share/mint-dev-tools/manifests/%s-specific.list" % release_prefix, 'r') as prefix_file:
+        for line in prefix_file:
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            release.specific_names.append(line)
+
+    with open("/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name, 'r') as manifest_file:
+        for line in manifest_file:
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            (package_name, package_version) = line.split("\t")
+            package_name = package_name.split(":amd64")[0]
+            package_name = package_name.split("-lts-")[0]
+            package = Package(package_name, package_version)
+            release.packages.append(package)
+            release.package_names.append(package_name)
+
+print "Packages only found in %s:" % release1.name
+for package in release1.package_names:
+    if not package in release2.package_names and not package in release1.specific_names:
+        print "         %s" % package
+
+print ""
+print "==========================================="
+print ""
+
+print "Packages only found in %s:" % release2.name
+for package in release2.package_names:
+    if not package in release1.package_names and not package in release2.specific_names:
+        print "         %s" % package

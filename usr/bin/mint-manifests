@@ -41,7 +41,10 @@ for release in [release1, release2]:
             line = line.strip()
             if line.startswith('#'):
                 continue
-            (package_name, package_version) = line.split("\t")
+            line = line.split("\t")
+            if len(line) == 2:
+                (package_name, package_version) = line
+
             package_name = package_name.split(":amd64")[0]
             package_name = package_name.split("-lts-")[0]
             package = Package(package_name, package_version)

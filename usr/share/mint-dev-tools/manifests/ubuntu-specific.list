@@ -114,3 +114,248 @@ usb-creator-gtk
 zeitgeist
 zeitgeist-core
 zeitgeist-datahub
+
+# bamfdaemon
+branding-ubuntu
+btrfs-tools
+compiz
+compiz-core
+compiz-gnome
+compiz-plugins-default
+# curl
+# dconf-cli
+deja-dup
+deja-dup-backend-gvfs
+# ethtool
+evolution-data-server-online-accounts
+example-content
+firefox-locale-es
+firefox-locale-zh-hans
+friends
+friends-dispatcher
+friends-facebook
+friends-twitter
+# gdisk
+gir1.2-rb-3.0
+gir1.2-secret-1
+gir1.2-udisks-2.0
+gir1.2-unity-5.0
+gnome-contacts
+gnome-control-center-shared-data
+gnome-orca
+gnome-screensaver
+gnome-session-common
+gnome-sudoku
+gnome-user-guide
+gnome-video-effects
+gnomine
+gsettings-ubuntu-schemas
+gtk3-engines-unico
+hud
+humanity-icon-theme
+ibus
+ibus-gtk
+ibus-gtk3
+ibus-pinyin
+ibus-table
+indicator-application
+indicator-appmenu
+indicator-bluetooth
+indicator-datetime
+indicator-keyboard
+indicator-messages
+indicator-power
+indicator-printers
+indicator-session
+indicator-sound
+landscape-client-ui-install
+language-pack-es
+language-pack-es-base
+language-pack-gnome-es
+language-pack-gnome-es-base
+language-pack-gnome-zh-hans
+language-pack-gnome-zh-hans-base
+language-pack-zh-hans
+language-pack-zh-hans-base
+libaccount-plugin-1.0-0
+libaccount-plugin-generic-oauth
+libaccount-plugin-google
+# libapparmor-perl
+# libasprintf-dev
+# libauthen-sasl-perl
+# libautodie-perl
+# libavahi-gobject0
+# libbamf3-2
+# libc-dev-bin
+# libc6-dbg
+# libc6-dev
+# libcanberra-gtk-module
+# libcanberra-gtk3-module
+libcheese-gtk23
+libcheese7
+# libclutter-1.0-common
+# libcogl-common
+# libcolumbus1
+# libcolumbus1-common
+libcompizconfig0
+# libcurl3
+# libdbusmenu-qt5
+# libdecoration0
+libdmapsharing-3.0-2
+# libepoxy0
+# libevdev2
+libfarstream-0.2-2
+libfolks-eds25
+libfolks-telepathy25
+libfolks25
+# libfreerdp-plugins-standard
+libfriends0
+# libgee2
+# libgettextpo-dev
+# libgettextpo0
+# libgexiv2-2
+# libgles1-mesa
+# libglew1.10
+# libglewmx1.10
+libgnome-control-center1
+libgphoto2-l10n
+libgsettings-qt1
+# libhud2
+# libipc-system-simple-perl
+# liblightdm-gobject-1-0
+# libllvm3.5
+# libmission-control-plugins0
+# libnet-libidn-perl
+# libnux-4.0-0
+# libopencc1
+# liboxideqt-qmlplugin
+# liboxideqtcore0
+# liboxideqtquick0
+# libp11-kit-gnome-keyring
+# libperlio-gzip-perl
+# libpocketsphinx1
+# libpurple-bin
+# libpyzy-1.0-0
+libqt4-sql-sqlite
+libqt5feedback5
+libqt5multimedia5
+libqt5organizer5
+libqt5qml-graphicaleffects
+libqt5svg5
+libqt5webkit5-qmlwebkitplugin
+# libraw9
+# libreoffice-avmedia-backend-gstreamer
+libreoffice-style-human
+# librest-0.7-0
+librhythmbox-core8
+libsphinxbase1
+# libssh-4
+# libsub-identify-perl
+libtelepathy-farstream3
+libtelepathy-logger3
+# libthumbnailer0
+# libtk8.6
+# libtxc-dxtn-s2tc0
+# libufe-xidgetter0
+libunity-action-qt1
+libunity-control-center1
+libunity-core-6.0-9
+libunity-gtk2-parser0
+libunity-gtk3-parser0
+libunity-misc4
+libunity-webapps0
+libunityvoice1
+# libupstart1
+# liburl-dispatcher1
+# libutempter0
+# libvisual-0.4-plugins
+# libvncserver0
+libwhoopsie-preferences0
+libwhoopsie0
+# libwmf0.2-7-gtk
+# libxp6
+libzeitgeist-1.0-1
+light-themes
+lightdm
+linux-generic
+linux-headers-3.16.0-30
+linux-headers-3.16.0-30-generic
+linux-headers-generic
+linux-image-3.16.0-30-generic
+linux-image-extra-3.16.0-30-generic
+linux-image-generic
+linux-signed-generic
+linux-signed-image-3.16.0-30-generic
+linux-signed-image-generic
+mcp-account-manager-uoa
+notify-osd
+notify-osd-icons
+onboard
+onboard-data
+oneconf
+overlay-scrollbar
+overlay-scrollbar-gtk2
+overlay-scrollbar-gtk3
+# oxideqt-codecs
+plainbox-provider-checkbox
+plainbox-provider-resource-generic
+plainbox-secure-policy
+plymouth-theme-ubuntu-logo
+python-ibus
+python-zeitgeist
+python3-apport
+python3-checkbox-ng
+python3-checkbox-support
+python3-distupgrade
+python3-feedparser
+python3-mako
+python3-markupsafe
+python3-plainbox
+python3-problem-report
+python3-pyparsing
+python3-requests
+python3-software-properties
+python3-update-manager
+python3-urllib3
+qtdeclarative5-accounts-plugin
+qtdeclarative5-dialogs-plugin
+qtdeclarative5-localstorage-plugin
+qtdeclarative5-privatewidgets-plugin
+qtdeclarative5-qtfeedback-plugin
+qtdeclarative5-qtquick2-plugin
+qtdeclarative5-ubuntu-ui-extras-browser-plugin
+qtdeclarative5-ubuntu-ui-extras-browser-plugin-assets
+qtdeclarative5-ubuntu-ui-toolkit-plugin
+qtdeclarative5-unity-action-plugin
+qtdeclarative5-window-plugin
+remmina
+remmina-common
+remmina-plugin-rdp
+remmina-plugin-vnc
+sphinx-voxforge-hmm-en
+sphinx-voxforge-lm-en
+# tk
+# tk8.6
+ubuntu-artwork
+ubuntu-desktop
+ubuntu-docs
+ubuntu-mono
+ubuntu-session
+ubuntu-sounds
+ubuntu-sso-client
+ubuntu-sso-client-qt
+ubuntu-standard
+ubuntu-ui-toolkit-theme
+webaccounts-extension-common
+webapp-container
+webbrowser-app
+whoopsie
+whoopsie-preferences
+xcursor-themes
+xdiagnose
+xterm
+xul-ext-ubufox
+xul-ext-unity
+xul-ext-webaccounts
+xul-ext-websites-integration
+

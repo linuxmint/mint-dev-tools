@@ -16,7 +16,7 @@ class Release:
 
 if len(sys.argv) != 3:
     print ""
-    print "Usage: mint-manifests release1 release2"
+    print "Usage: mint-compare-manifests release1 release2"
     print ""
     print "Available releases: "
     for path in os.listdir("/usr/share/mint-dev-tools/manifests"):

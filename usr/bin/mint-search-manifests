@@ -1,0 +1,53 @@
+#!/usr/bin/python2
+
+import os, sys, commands
+
+class Package:
+    def __init__(self, name, version):
+        self.name = name
+        self.version = version
+
+class Release:
+    def __init__(self, name):
+        self.name = name
+        self.packages = []
+        self.package_names = []
+        self.specific_names =  []
+
+if len(sys.argv) != 2:
+    print ""
+    print "Usage: mint-search-manifests package"
+    print ""
+    sys.exit(1)
+
+keyword = sys.argv[1]
+
+for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
+    release = Release(path)
+    release_prefix = release.name.split("-")[0]
+    for manifest in ["/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name,
+                     "/usr/share/mint-dev-tools/manifests/%s/filesystem.packages" % release.name]:
+        if os.path.exists(manifest):
+            with open(manifest, 'r') as manifest_file:
+                for line in manifest_file:
+                    line = line.strip()
+                    if line.startswith('#'):
+                        continue
+                    line = line.split("\t")
+                    if len(line) == 2:
+                        (package_name, package_version) = line
+
+                    if keyword in package_name:
+                        package_name = package_name.split(":amd64")[0]
+                        package_name = package_name.split("-lts-")[0]
+                        package = Package(package_name, package_version)
+                        release.packages.append(package)
+                        release.package_names.append(package_name)
+            break
+
+    if len(release.packages) > 0:
+        print ""
+        print "%s:" % release.name
+        for package in release.packages:
+            print "    %s    %s" % (package.name, package.version)
+

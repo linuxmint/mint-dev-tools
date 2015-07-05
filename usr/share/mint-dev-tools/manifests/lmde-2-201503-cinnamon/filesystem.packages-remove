@@ -1,0 +1,16 @@
+gdisk
+gparted
+imagemagick
+imagemagick-6.q16
+isoquery
+libgtkmm-2.4-1c2a:amd64
+libisocodes1:amd64
+libparted-fs-resize0:amd64
+live-boot
+live-boot-initramfs-tools
+live-config
+live-config-sysvinit
+live-installer
+live-installer-slideshow
+menu
+syslinux-utils

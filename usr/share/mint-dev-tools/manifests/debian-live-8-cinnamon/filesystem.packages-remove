@@ -1,0 +1,16 @@
+dkms
+ethtool
+fakeroot
+gcc
+gcc-4.9
+libasan1:amd64
+libcilkrts5:amd64
+libdumbnet1
+libfakeroot:amd64
+libgcc-4.9-dev:amd64
+liblsan0:amd64
+libubsan0:amd64
+open-vm-tools
+open-vm-tools-desktop
+open-vm-tools-dkms
+zerofree

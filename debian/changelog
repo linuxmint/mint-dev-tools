@@ -1,3 +1,17 @@
+mint-dev-tools (1.0.3) rosa; urgency=medium
+
+  * Moved dependencies not required to build projects to recommends
+  * Added mint-compare-releases (compares versions of packages across Mint releases)
+  * mint-compare-releases: Added ia32-libs to list of specific pkgs
+  * mint-compare-releases: Added plymouth-themes-mint to the list of LMDE-specific packages
+  * mint-compare-releases: Don't compare GTK3-related packages between Mint and LMDE
+  * Added a manifest comparator (incomplete)
+  * Updated manifests and compare tool
+  * Added mint-search-manifest, added more manifests
+  * Added 17.2 manifests
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 06 Nov 2015 16:43:31 +0000
+
 mint-dev-tools (1.0.2) rebecca; urgency=medium
 
   * lower-cased Cinnamon project

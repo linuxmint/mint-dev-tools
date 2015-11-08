@@ -38,8 +38,8 @@ for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
                         (package_name, package_version) = line
 
                     if keyword in package_name:
-                        package_name = package_name.split(":amd64")[0]
-                        package_name = package_name.split("-lts-")[0]
+                        #package_name = package_name.split(":amd64")[0]
+                        #package_name = package_name.split("-lts-")[0]
                         package = Package(package_name, package_version)
                         release.packages.append(package)
                         release.package_names.append(package_name)

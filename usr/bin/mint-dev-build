@@ -136,8 +136,8 @@ for subproject in selected_project.subprojects:
     print ""
     print "   #######################################################################"
     print "   ### Ensuring build dependencies and building %s" % subproject
-    print "   ### -- You may at various points be asked to confirm installation"
-    print "   ###    of build dependencies - please answer yes to these."
+    print "   ### -- You may at various points be enter your sudo password -"
+    print "   ###    please enter this if asked."
     print "   #######################################################################"
     print ""
     os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")

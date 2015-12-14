@@ -11,6 +11,11 @@ mint-meta-codecs
 mint-meta
 syslinux-themes-linuxmint
 ia32-libs
+firefox
+ubuntu-drivers-common
+ubiquity
+nvidia-prime
+banshee
 
 # Imports from PPA and backports
 minecraft-installer

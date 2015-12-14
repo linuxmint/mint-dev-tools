@@ -3,6 +3,7 @@
 import os, sys, commands
 
 lmde_releases = ['debian', 'betsy']
+mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa']
 
 class Package:
     def __init__(self, name):
@@ -24,6 +25,11 @@ def read_list(filename):
             continue
         array.append(line)
     return array
+
+def remove_version_suffix(version):
+    for release in (lmde_releases + mint_releases):
+        version = version.replace("+%s" % release, "")
+    return version
 
 lmde_specific_packages = read_list("/usr/share/mint-dev-tools/packages/lmde.list")
 ubuntu_specific_packages = read_list("/usr/share/mint-dev-tools/packages/ubuntu.list")
@@ -109,8 +115,8 @@ for component in ["main", "upstream", "import"]:
             print "Package %s is missing in %s" % (package.name, release2.name)
         else:
             # Compare versions
-            version1 = package.version.replace("+%s" % release1.name, "")
-            version2 = equivalent_package.version.replace("+%s" % release2.name, "")
+            version1 = remove_version_suffix(package.version)
+            version2 = remove_version_suffix(equivalent_package.version)
             output = commands.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
             if (output == 'NOK'):
                 print "Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version)

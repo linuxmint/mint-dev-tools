@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 import sys, os, commands
 from gi.repository import GLib
@@ -141,7 +141,15 @@ for subproject in selected_project.subprojects:
     print "   #######################################################################"
     print ""
     os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")
-    os.system("dpkg-buildpackage -j%d" % threads) 
+    ret = os.system("dpkg-buildpackage -j%d" % threads)
+    if ret > 0:
+        print "   ######################################################################"
+        print "   ### Problem building package '%s'" % subproject
+        print "   ### -- Please check the build log for errors, and correct the issue."
+        print "   ###"
+        print "   ### TERMINATING build..."
+        print "   ######################################################################"
+        sys.exit(1)
     print ""
     print "   #######################################################################"
     print "   ### Installing %s" % subproject

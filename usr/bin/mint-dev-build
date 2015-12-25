@@ -121,6 +121,18 @@ if already_existing_source:
     if selection == 2:
         build_only = True
 
+if not build_only:
+    for subproject in selected_project.subprojects:
+        os.chdir(subproject)
+        print ""
+        print "   #######################################################################"
+        print "   ### Ensuring build dependencies for %s" % subproject
+        print "   ### -- You maybe asked to enter your sudo password -"
+        print "   ###    please enter this if asked."
+        print "   #######################################################################"
+        print ""
+        os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")
+
 for subproject in selected_project.subprojects:
     if not build_only:
         print ""
@@ -135,13 +147,10 @@ for subproject in selected_project.subprojects:
     os.chdir(subproject)
     print ""
     print "   #######################################################################"
-    print "   ### Ensuring build dependencies and building %s" % subproject
-    print "   ### -- You may at various points be enter your sudo password -"
-    print "   ###    please enter this if asked."
+    print "   ### Building %s" % subproject
     print "   #######################################################################"
     print ""
-    os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")
-    ret = os.system("dpkg-buildpackage -j%d" % threads)
+    ret = os.system("dpkg-buildpackage -us -uc -j%d" % threads)
     if ret > 0:
         print "   ######################################################################"
         print "   ### Problem building package '%s'" % subproject

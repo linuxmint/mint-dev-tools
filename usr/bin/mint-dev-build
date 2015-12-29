@@ -123,18 +123,6 @@ if already_existing_source:
 
 if not build_only:
     for subproject in selected_project.subprojects:
-        os.chdir(subproject)
-        print ""
-        print "   #######################################################################"
-        print "   ### Ensuring build dependencies for %s" % subproject
-        print "   ### -- You maybe asked to enter your sudo password -"
-        print "   ###    please enter this if asked."
-        print "   #######################################################################"
-        print ""
-        os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")
-
-for subproject in selected_project.subprojects:
-    if not build_only:
         print ""
         print "   #######################################################################"
         print "   ### Removing local version (it it exists) and downloading %s" % subproject
@@ -143,7 +131,29 @@ for subproject in selected_project.subprojects:
         if os.path.exists(subproject):
             os.system("rm -rf %s" % subproject)
         os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
+        os.chdir(subproject)
+        print ""
+        print "   #######################################################################"
+        print "   ### Ensuring build dependencies for %s" % subproject
+        print "   ### -- You maybe asked to enter your sudo password -"
+        print "   ###    please enter this if asked."
+        print "   #######################################################################"
+        print ""
+        ret = os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")
+        if ret > 0:
+            print "   ######################################################################"
+            print "   ### Problem installing dependencies for package '%s'" % subproject
+            print "   ### -- Please check the build log for errors, and correct the issue."
+            print "   ### -- Note you may need to enable source code repositories"
+            print "   ###"
+            print "   ### TERMINATING build..."
+            print "   ######################################################################"
+            sys.exit(1)
+        os.chdir("..")
 
+os.chdir(root)
+
+for subproject in selected_project.subprojects:
     os.chdir(subproject)
     print ""
     print "   #######################################################################"

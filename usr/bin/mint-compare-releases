@@ -1,8 +1,8 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import os
 import sys
-import commands
+import subprocess
 
 lmde_releases = ['debian', 'betsy']
 mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa']
@@ -47,9 +47,9 @@ os.system("mkdir -p .compare-releases")
 os.system("rm -rf .compare-releases/*")
 
 for component in ["main", "upstream", "import"]:
-    print "================================"
-    print component.upper()
-    print ""
+    print("================================")
+    print(component.upper())
+    print("")
 
     release1 = Release(sys.argv[1])
     release2 = Release(sys.argv[2])
@@ -120,11 +120,11 @@ for component in ["main", "upstream", "import"]:
                 equivalent_package = package2
                 break
         if equivalent_package is None:
-            print "Package %s is missing in %s" % (package.name, release2.name)
+            print("Package %s is missing in %s" % (package.name, release2.name))
         else:
             # Compare versions
             version1 = remove_version_suffix(package.version)
             version2 = remove_version_suffix(equivalent_package.version)
-            output = commands.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
+            output = subprocess.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
             if (output == 'NOK'):
-                print "Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version)
+                print("Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version))

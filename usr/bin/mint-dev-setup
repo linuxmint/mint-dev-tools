@@ -1,59 +1,59 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
-import commands
+import subprocess
 
-user_home = os.path.expanduser('~')
+USER_HOME = os.path.expanduser('~')
 
 ## Create Sandbox
-while not os.path.exists("%s/Sandbox" % user_home):
-    print ""
-    print " === CREATING A SANDBOX ==="
+while not os.path.exists("%s/Sandbox" % USER_HOME):
+    print("")
+    print(" === CREATING A SANDBOX ===")
     os.system("mkdir -p ~/Sandbox")
-    print "Your Sandbox was created in ~/Sandbox. This is where you'll do all your development."
+    print("Your Sandbox was created in ~/Sandbox. This is where you'll do all your development.")
 
 ## Configure Git
-while not os.path.exists("%s/.gitconfig" % user_home):
-    print ""
-    print " === CONFIGURING GIT ==="
-    git_name = raw_input('Enter your GIT username: ').strip()
-    git_email = raw_input('Enter your GIT email: ').strip()
+while not os.path.exists("%s/.gitconfig" % USER_HOME):
+    print("")
+    print(" === CONFIGURING GIT ===")
+    git_name = input('Enter your GIT username: ').strip()
+    git_email = input('Enter your GIT email: ').strip()
     os.system("git config --global user.name \"%s\"" % git_name)
     os.system("git config --global user.email \"%s\"" % git_email)
 
 ## Configure SSH
-while not os.path.exists("%s/.ssh/id_rsa.pub" % user_home):
-    print ""
-    print " === CREATING AN SSH KEY (keep pressing enter for default choices) ==="
+while not os.path.exists("%s/.ssh/id_rsa.pub" % USER_HOME):
+    print("")
+    print(" === CREATING AN SSH KEY (keep pressing enter for default choices) ===")
     os.system("ssh-keygen")
-    print ""
+    print("")
     print("This is your public SSH key, you should now login to your Github account and add that key:")
-    print ""
+    print("")
     os.system("cat ~/.ssh/id_rsa.pub")
 
 ## Configure APT source repositories
 while not os.path.exists("/etc/apt/sources.list.d/official-source-repositories.list"):
-    print ""
-    print " === SETTING UP APT SOURCE REPOSITORIES ==="
-    print ""
-    print "You need to tick the option to 'Enable source code repositories' in mintsources."
-    raw_input("Press ENTER to launch mintsources.")
+    print("")
+    print(" === SETTING UP APT SOURCE REPOSITORIES ===")
+    print("")
+    print("You need to tick the option to 'Enable source code repositories' in mintsources.")
+    input("Press ENTER to launch mintsources.")
     os.system("mintsources")
 
 ## Refresh APT cache
-lsb_codename = commands.getoutput("lsb_release -cs").strip()
+lsb_codename = subprocess.getoutput("lsb_release -cs").strip()
 while not os.path.exists("/var/lib/apt/lists/extra.linuxmint.com_dists_%s_main_source_Sources" % lsb_codename):
-    print ""
-    print " === REFRESHING APT CACHE ==="
-    print ""
-    raw_input("Press ENTER to refresh the APT cache.")
+    print("")
+    print(" === REFRESHING APT CACHE ===")
+    print("")
+    input("Press ENTER to refresh the APT cache.")
     os.system("apt update")
 
 # We're all set, create a .mint-dev-tools so we know everything's fine
-os.system("touch %s/.mint-dev-setup" % user_home)
+os.system("touch %s/.mint-dev-setup" % USER_HOME)
 
-print ""
-print " === ALL DONE ==="
-print ""
-print "Your environment is now set up. You can now use mint-dev-build to build projects."
-print ""
+print("")
+print(" === ALL DONE ===")
+print("")
+print("Your environment is now set up. You can now use mint-dev-build to build projects.")
+print("")

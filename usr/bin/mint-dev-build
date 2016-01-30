@@ -1,8 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import os
-import commands
 
 user_home = os.path.expanduser('~')
 
@@ -36,44 +35,44 @@ projects = sorted(projects, key=lambda x: x.name, reverse=False)
 
 ## Check mint-dev-setup ran successfully
 if not os.path.exists("%s/.mint-dev-setup" % user_home):
-    print ""
-    print " === ERROR ==="
-    print ""
-    print "Your development environment isn't set up properly. Please run mint-dev-setup."
+    print("")
+    print(" === ERROR ===")
+    print("")
+    print("Your development environment isn't set up properly. Please run mint-dev-setup.")
     sys.exit(1)
 
-print ""
-print " === WARNING ==="
-print ""
-print "This command does the following:"
-print "    - Deletes all build outputs your Sandbox (~/Sandbox/*_*)"
-print "    - Deletes the local version (along with any local changes) for the selected project(s) (~/Sandbox/<projectname>)"
-print "    - Downloads and compiles the selected project(s) from Github's master branch(es)"
-print "    - Installs the packages produced by the compilation (and overrides local versions)"
-print ""
-print "If you're scared when reading any of that, PRESS CTRL+C NOW! Otherwise.. press ENTER to continue."
-raw_input("")
+print("")
+print(" === WARNING ===")
+print("")
+print("This command does the following:")
+print("    - Deletes all build outputs your Sandbox (~/Sandbox/*_*)")
+print("    - Deletes the local version (along with any local changes) for the selected project(s) (~/Sandbox/<projectname>)")
+print("    - Downloads and compiles the selected project(s) from Github's master branch(es)")
+print("    - Installs the packages produced by the compilation (and overrides local versions)")
+print("")
+print("If you're scared when reading any of that, PRESS CTRL+C NOW! Otherwise.. press ENTER to continue.")
+input("")
 
 selected_project = None
 
 while selected_project is None:
-    print ""
-    print " === PROJECT SELECTION ==="
-    print ""
-    print "Choose the project you'd like to build (note that this will overwrite the version running on your system):"
-    print ""
+    print("")
+    print(" === PROJECT SELECTION ===")
+    print("")
+    print("Choose the project you'd like to build (note that this will overwrite the version running on your system):")
+    print("")
     i = 1
     while i <= len(projects):
         project = projects[i - 1]
-        print "  %d. %s" % (i, project.name)
+        print("  %d. %s" % (i, project.name))
         i += 1
-    print ""
+    print("")
 
     index = 0
     try:
-        index = int(raw_input("Please type the number of the project you'd like to build: "))
+        index = int(input("Please type the number of the project you'd like to build: "))
     except:
-        print "Invalid choice"
+        print("Invalid choice")
         sys.exit(1)
     if index > 0 and index <= len(projects):
         selected_project = projects[index - 1]
@@ -83,44 +82,44 @@ os.system("rm -f *_*")  # Remove all packages and build results
 
 for subproject in selected_project.subprojects:
     if os.path.exists(subproject):
-        print ""
-        print "   #######################################################################"
-        print "   ### Removing local version of %s" % subproject
-        print "   #######################################################################"
-        print ""
+        print("")
+        print("   #######################################################################")
+        print("   ### Removing local version of %s" % subproject)
+        print("   #######################################################################")
+        print("")
         os.system("rm -rf %s" % subproject)
 
-    print ""
-    print "   #######################################################################"
-    print "   ### Downloading build dependencies for %s" % subproject
-    print "   #######################################################################"
-    print ""
+    print("")
+    print("   #######################################################################")
+    print("   ### Downloading build dependencies for %s" % subproject)
+    print("   #######################################################################")
+    print("")
     os.system("apt build-dep %s" % subproject)
-    print ""
-    print ""
-    print "   #######################################################################"
-    print "   ### Downloading %s" % subproject
-    print "   #######################################################################"
-    print ""
+    print("")
+    print("")
+    print("   #######################################################################")
+    print("   ### Downloading %s" % subproject)
+    print("   #######################################################################")
+    print("")
     os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
     os.chdir(subproject)
-    print ""
-    print "   #######################################################################"
-    print "   ### Building %s" % subproject
-    print "   #######################################################################"
-    print ""
+    print("")
+    print("   #######################################################################")
+    print("   ### Building %s" % subproject)
+    print("   #######################################################################")
+    print("")
     os.system("dpkg-buildpackage")
-    print ""
-    print "   #######################################################################"
-    print "   ### Installing %s" % subproject
-    print "   #######################################################################"
-    print ""
+    print("")
+    print("   #######################################################################")
+    print("   ### Installing %s" % subproject)
+    print("   #######################################################################")
+    print("")
     os.system("sudo dpkg -i ../*.deb")
-    print ""
-    print "   #######################################################################"
-    print "   ### Cleaning up"
-    print "   #######################################################################"
-    print ""
+    print("")
+    print("   #######################################################################")
+    print("   ### Cleaning up")
+    print("   #######################################################################")
+    print("")
     os.system("git clean -df .")
     os.system("git reset --hard")
     os.chdir("..")

@@ -1,18 +1,24 @@
 #!/usr/bin/python2
 
-import os, sys, commands
+import os
+import sys
+import commands
+
 
 class Package:
+
     def __init__(self, name, version):
         self.name = name
         self.version = version
 
+
 class Release:
+
     def __init__(self, name):
         self.name = name
         self.packages = []
         self.package_names = []
-        self.specific_names =  []
+        self.specific_names = []
 
 if len(sys.argv) != 2:
     print ""
@@ -50,4 +56,3 @@ for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
         print "%s:" % release.name
         for package in release.packages:
             print "    %s    %s" % (package.name, package.version)
-

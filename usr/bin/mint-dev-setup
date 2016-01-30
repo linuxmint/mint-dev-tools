@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import os, commands
+import os
+import commands
 
 user_home = os.path.expanduser('~')
 
@@ -36,7 +37,7 @@ while not os.path.exists("/etc/apt/sources.list.d/official-source-repositories.l
     print " === SETTING UP APT SOURCE REPOSITORIES ==="
     print ""
     print "You need to tick the option to 'Enable source code repositories' in mintsources."
-    raw_input ("Press ENTER to launch mintsources.")
+    raw_input("Press ENTER to launch mintsources.")
     os.system("mintsources")
 
 ## Refresh APT cache
@@ -45,7 +46,7 @@ while not os.path.exists("/var/lib/apt/lists/extra.linuxmint.com_dists_%s_main_s
     print ""
     print " === REFRESHING APT CACHE ==="
     print ""
-    raw_input ("Press ENTER to refresh the APT cache.")
+    raw_input("Press ENTER to refresh the APT cache.")
     os.system("apt update")
 
 # We're all set, create a .mint-dev-tools so we know everything's fine

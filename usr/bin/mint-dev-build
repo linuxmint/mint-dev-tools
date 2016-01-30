@@ -1,10 +1,14 @@
 #!/usr/bin/python
 
-import sys, os, commands
+import sys
+import os
+import commands
 
 user_home = os.path.expanduser('~')
 
+
 class Project:
+
     def __init__(self, name, subprojects):
         self.name = name
         self.subprojects = subprojects
@@ -60,9 +64,9 @@ while selected_project is None:
     print ""
     i = 1
     while i <= len(projects):
-        project = projects[i-1]
+        project = projects[i - 1]
         print "  %d. %s" % (i, project.name)
-        i+=1
+        i += 1
     print ""
 
     index = 0
@@ -72,10 +76,10 @@ while selected_project is None:
         print "Invalid choice"
         sys.exit(1)
     if index > 0 and index <= len(projects):
-        selected_project = projects[index-1]
+        selected_project = projects[index - 1]
 
 os.chdir("%s/Sandbox" % user_home)
-os.system("rm -f *_*") # Remove all packages and build results
+os.system("rm -f *_*")  # Remove all packages and build results
 
 for subproject in selected_project.subprojects:
     if os.path.exists(subproject):
@@ -121,4 +125,3 @@ for subproject in selected_project.subprojects:
     os.system("git reset --hard")
     os.chdir("..")
     os.system("rm -f *_*")
-

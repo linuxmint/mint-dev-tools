@@ -1,20 +1,27 @@
 #!/usr/bin/python2
 
-import os, sys, commands
+import os
+import sys
+import commands
 
 lmde_releases = ['debian', 'betsy']
 mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa']
 
+
 class Package:
+
     def __init__(self, name):
         self.name = name
         self.version = None
 
+
 class Release:
+
     def __init__(self, name):
         self.name = name
         self.packages = []
         self.is_lmde = (name in lmde_releases)
+
 
 def read_list(filename):
     array = []
@@ -25,6 +32,7 @@ def read_list(filename):
             continue
         array.append(line)
     return array
+
 
 def remove_version_suffix(version):
     for release in (lmde_releases + mint_releases):

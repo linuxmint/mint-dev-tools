@@ -1,18 +1,24 @@
 #!/usr/bin/python2
 
-import os, sys, commands
+import os
+import sys
+import commands
+
 
 class Package:
+
     def __init__(self, name, version):
         self.name = name
         self.version = version
 
+
 class Release:
+
     def __init__(self, name):
         self.name = name
         self.packages = []
         self.package_names = []
-        self.specific_names =  []
+        self.specific_names = []
 
 if len(sys.argv) != 3:
     print ""
@@ -53,7 +59,7 @@ for release in [release1, release2]:
 
 print "Packages only found in %s:" % release1.name
 for package in release1.package_names:
-    if not package in release2.package_names and not package in release1.specific_names:
+    if package not in release2.package_names and package not in release1.specific_names:
         print "         %s" % package
 
 print ""
@@ -62,5 +68,5 @@ print ""
 
 print "Packages only found in %s:" % release2.name
 for package in release2.package_names:
-    if not package in release1.package_names and not package in release2.specific_names:
+    if package not in release1.package_names and package not in release2.specific_names:
         print "         %s" % package

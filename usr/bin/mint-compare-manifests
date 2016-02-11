@@ -1,27 +1,32 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
-import os, sys, commands
+import os
+import sys
+
 
 class Package:
+
     def __init__(self, name, version):
         self.name = name
         self.version = version
 
+
 class Release:
+
     def __init__(self, name):
         self.name = name
         self.packages = []
         self.package_names = []
-        self.specific_names =  []
+        self.specific_names = []
 
 if len(sys.argv) != 3:
-    print ""
-    print "Usage: mint-compare-manifests release1 release2"
-    print ""
-    print "Available releases: "
+    print("")
+    print("Usage: mint-compare-manifests release1 release2")
+    print("")
+    print("Available releases: ")
     for path in os.listdir("/usr/share/mint-dev-tools/manifests"):
-        print "   %s" % path
-    print ""
+        print("   %s" % path)
+    print("")
     sys.exit(1)
 
 release1 = Release(sys.argv[1])
@@ -51,16 +56,16 @@ for release in [release1, release2]:
             release.packages.append(package)
             release.package_names.append(package_name)
 
-print "Packages only found in %s:" % release1.name
+print("Packages only found in %s:" % release1.name)
 for package in release1.package_names:
-    if not package in release2.package_names and not package in release1.specific_names:
-        print "         %s" % package
+    if package not in release2.package_names and package not in release1.specific_names:
+        print("         %s" % package)
 
-print ""
-print "==========================================="
-print ""
+print("")
+print("===========================================")
+print("")
 
-print "Packages only found in %s:" % release2.name
+print("Packages only found in %s:" % release2.name)
 for package in release2.package_names:
-    if not package in release1.package_names and not package in release2.specific_names:
-        print "         %s" % package
+    if package not in release1.package_names and package not in release2.specific_names:
+        print("         %s" % package)

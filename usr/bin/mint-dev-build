@@ -1,16 +1,8 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import sys, os, commands
-from gi.repository import GLib
-
-GROUP = "Mint Development Tools"
-SANDBOX_PATH = "DevRoot"
-SANDBOX_NAME = "RootDisplayName"
-THREADS = "Threads"
 
 user_home = os.path.expanduser('~')
-settings = None
-settings_path = "%s/mint-dev-tools" % GLib.get_user_config_dir()
 
 class Project:
     def __init__(self, name, subprojects):
@@ -18,10 +10,7 @@ class Project:
         self.subprojects = subprojects
 
 projects = []
-projects.append(Project("Cinnamon (all sub-projects)", ["cinnamon-translations", "cinnamon-desktop", "cinnamon-menus", \
-                                                        "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-screensaver", "cjs", \
-                                                        "cinnamon-control-center", "muffin", \
-                                                        "cinnamon", "nemo"]))
+projects.append(Project("Cinnamon (all sub-projects)", ["cjs", "cinnamon-desktop", "cinnamon-menus", "cinnamon-translations", "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-control-center", "cinnamon-screensaver", "muffin", "cinnamon", "nemo"]))
 projects.append(Project("cjs", ["cjs"]))
 projects.append(Project("cinnamon-desktop", ["cinnamon-desktop"]))
 projects.append(Project("cinnamon-menus", ["cinnamon-menus"]))
@@ -42,27 +31,20 @@ for simple_project in simple_projects:
 projects = sorted(projects, key=lambda x: x.name, reverse=False)
 
 ## Check mint-dev-setup ran successfully
-if not os.path.exists(settings_path):
+if not os.path.exists("%s/.mint-dev-setup" % user_home):
     print ""
     print " === ERROR ==="
     print ""
     print "Your development environment isn't set up properly. Please run mint-dev-setup."
     sys.exit(1)
 
-settings = GLib.KeyFile.new()
-settings.load_from_file(settings_path, GLib.KeyFileFlags.KEEP_COMMENTS)
-
-root = settings.get_string(GROUP, SANDBOX_PATH)
-name = settings.get_string(GROUP, SANDBOX_NAME)
-threads = settings.get_integer(GROUP, THREADS)
-
 print ""
 print " === WARNING ==="
 print ""
 print "This command does the following:"
-print "    - Deletes all build outputs your Sandbox (~/%s/*_*)" % name
-print "    - (Optionally) Deletes and re-downloads the selected project(s). (~/%s/<projectname>)" % name
-print "    - Compiles the selected project(s)"
+print "    - Deletes all build outputs your Sandbox (~/Sandbox/*_*)"
+print "    - Deletes the local version (along with any local changes) for the selected project(s) (~/Sandbox/<projectname>)"
+print "    - Downloads and compiles the selected project(s) from Github's master branch(es)"
 print "    - Installs the packages produced by the compilation (and overrides local versions)"
 print ""
 print "If you're scared when reading any of that, PRESS CTRL+C NOW! Otherwise.. press ENTER to continue."
@@ -92,83 +74,38 @@ while selected_project is None:
     if index > 0 and index <= len(projects):
         selected_project = projects[index-1]
 
-os.chdir(root)
+os.chdir("%s/Sandbox" % user_home)
 os.system("rm -f *_*") # Remove all packages and build results
-
-already_existing_source = False
 
 for subproject in selected_project.subprojects:
     if os.path.exists(subproject):
-        already_existing_source = True
-    else:
-        already_existing_source = False
-        break
+        print ""
+        print "   #######################################################################"
+        print "   ### Removing local version of %s" % subproject
+        print "   #######################################################################"
+        print ""
+        os.system("rm -rf %s" % subproject)
 
-build_only = False
-
-if already_existing_source:
-    print "Local source(s) already exist.  Please select an option:"
     print ""
-    print "  1. Delete existing sources and re-clone from Github"
-    print "  2. Build from existing sources (no pre- or post-build cleanup will be performed)"
+    print "   #######################################################################"
+    print "   ### Downloading build dependencies for %s" % subproject
+    print "   #######################################################################"
     print ""
-    selection = 1
-    try:
-        selection = int(raw_input("Please enter your selection - default is 1: "))
-    except:
-        print "Invalid choice"
-        sys.exit(1)
-    if selection == 2:
-        build_only = True
-
-if not build_only:
-    for subproject in selected_project.subprojects:
-        print ""
-        print "   #######################################################################"
-        print "   ### Removing local version (it it exists) and downloading %s" % subproject
-        print "   #######################################################################"
-        print ""
-        if os.path.exists(subproject):
-            os.system("rm -rf %s" % subproject)
-        os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
-        os.chdir(subproject)
-        print ""
-        print "   #######################################################################"
-        print "   ### Ensuring build dependencies for %s" % subproject
-        print "   ### -- You maybe asked to enter your sudo password -"
-        print "   ###    please enter this if asked."
-        print "   #######################################################################"
-        print ""
-        ret = os.system("sudo mk-build-deps -i --tool 'apt-get --no-install-recommends -y'")
-        if ret > 0:
-            print "   ######################################################################"
-            print "   ### Problem installing dependencies for package '%s'" % subproject
-            print "   ### -- Please check the build log for errors, and correct the issue."
-            print "   ### -- Note you may need to enable source code repositories"
-            print "   ###"
-            print "   ### TERMINATING build..."
-            print "   ######################################################################"
-            sys.exit(1)
-        os.chdir("..")
-
-os.chdir(root)
-
-for subproject in selected_project.subprojects:
+    os.system("apt build-dep %s" % subproject)
+    print ""
+    print ""
+    print "   #######################################################################"
+    print "   ### Downloading %s" % subproject
+    print "   #######################################################################"
+    print ""
+    os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
     os.chdir(subproject)
     print ""
     print "   #######################################################################"
     print "   ### Building %s" % subproject
     print "   #######################################################################"
     print ""
-    ret = os.system("dpkg-buildpackage -us -uc -j%d" % threads)
-    if ret > 0:
-        print "   ######################################################################"
-        print "   ### Problem building package '%s'" % subproject
-        print "   ### -- Please check the build log for errors, and correct the issue."
-        print "   ###"
-        print "   ### TERMINATING build..."
-        print "   ######################################################################"
-        sys.exit(1)
+    os.system("dpkg-buildpackage")
     print ""
     print "   #######################################################################"
     print "   ### Installing %s" % subproject
@@ -180,9 +117,8 @@ for subproject in selected_project.subprojects:
     print "   ### Cleaning up"
     print "   #######################################################################"
     print ""
-    if not build_only:
-        os.system("git clean -dfx .")
-        os.system("git reset --hard")
+    os.system("git clean -df .")
+    os.system("git reset --hard")
     os.chdir("..")
     os.system("rm -f *_*")
 

@@ -1,38 +1,15 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 import os, commands
-from gi.repository import GLib
-
-GROUP = "Mint Development Tools"
-SANDBOX_PATH = "DevRoot"
-SANDBOX_NAME = "RootDisplayName"
-THREADS = "Threads"
 
 user_home = os.path.expanduser('~')
-settings = None
-settings_path = "%s/mint-dev-tools" % GLib.get_user_config_dir()
-
-settings = GLib.KeyFile.new()
-
-if os.path.exists(settings_path):
-    settings.load_from_file(settings_path, GLib.KeyFileFlags.KEEP_COMMENTS)
-
-print ""
-print "Enter the name for your development directory - it will be placed in your home folder."
-print ""
-dir_name = raw_input("Name of folder (press return to name it 'Sandbox'):  ")
-if dir_name == "":
-    dir_name = "Sandbox"
 
 ## Create Sandbox
-while not os.path.exists("%s/%s" % (user_home, dir_name)):
+while not os.path.exists("%s/Sandbox" % user_home):
     print ""
     print " === CREATING A SANDBOX ==="
-    os.system("mkdir -p ~/%s" % dir_name)
-    print "Your sandbox was created in ~/%s. This is where you'll do all your development." % dir_name
-
-settings.set_string(GROUP, SANDBOX_PATH, "%s/%s" % (user_home, dir_name))
-settings.set_string(GROUP, SANDBOX_NAME, dir_name)
+    os.system("mkdir -p ~/Sandbox")
+    print "Your Sandbox was created in ~/Sandbox. This is where you'll do all your development."
 
 ## Configure Git
 while not os.path.exists("%s/.gitconfig" % user_home):
@@ -53,35 +30,26 @@ while not os.path.exists("%s/.ssh/id_rsa.pub" % user_home):
     print ""
     os.system("cat ~/.ssh/id_rsa.pub")
 
-print ""
-print " === REFRESHING APT CACHE ==="
-print ""
-raw_input ("Press ENTER to refresh the APT cache.")
-os.system("sudo apt-get update")
+## Configure APT source repositories
+while not os.path.exists("/etc/apt/sources.list.d/official-source-repositories.list"):
+    print ""
+    print " === SETTING UP APT SOURCE REPOSITORIES ==="
+    print ""
+    print "You need to tick the option to 'Enable source code repositories' in mintsources."
+    raw_input ("Press ENTER to launch mintsources.")
+    os.system("mintsources")
 
-max_threads = int(commands.getoutput("cat /proc/cpuinfo | grep processor | wc -l")) + 1
+## Refresh APT cache
+lsb_codename = commands.getoutput("lsb_release -cs").strip()
+while not os.path.exists("/var/lib/apt/lists/extra.linuxmint.com_dists_%s_main_source_Sources" % lsb_codename):
+    print ""
+    print " === REFRESHING APT CACHE ==="
+    print ""
+    raw_input ("Press ENTER to refresh the APT cache.")
+    os.system("apt update")
 
-print ""
-print "Enter the maximum number of threads to use for compiling."
-print "This has little effect on smaller projects, but can save a"
-print "a lot of time when compiling Cinnamon."
-print ""
-print "Maximum recommended for this system: %d" % max_threads
-print ""
-print "Using less threads will ensure your system remains more responsive"
-print "during compilation, at the cost of it potentially taking longer to complete."
-print ""
-try:
-    max_threads_user = int(raw_input("Enter the number of threads to use, or press return to use the maximum: "))
-except:
-    max_threads_user = max_threads
-print ""
-print "Compiling with %d threads" % max_threads_user
-
-settings.set_integer(GROUP, THREADS, max_threads_user)
-
-# We're all set, save the settings file which has our sandbox path
-settings.save_to_file(settings_path)
+# We're all set, create a .mint-dev-tools so we know everything's fine
+os.system("touch %s/.mint-dev-setup" % user_home)
 
 print ""
 print " === ALL DONE ==="

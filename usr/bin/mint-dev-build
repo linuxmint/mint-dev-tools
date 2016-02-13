@@ -2,8 +2,16 @@
 
 import sys
 import os
+from gi.repository import GLib
 
-user_home = os.path.expanduser('~')
+GROUP = "Mint Development Tools"
+SANDBOX_PATH = "DevRoot"
+SANDBOX_NAME = "RootDisplayName"
+THREADS = "Threads"
+
+SETTINGS_PATH = "%s/mint-dev-tools" % GLib.get_user_config_dir()
+
+settings = None
 
 
 class Project:
@@ -13,7 +21,10 @@ class Project:
         self.subprojects = subprojects
 
 projects = []
-projects.append(Project("Cinnamon (all sub-projects)", ["cjs", "cinnamon-desktop", "cinnamon-menus", "cinnamon-translations", "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-control-center", "cinnamon-screensaver", "muffin", "cinnamon", "nemo"]))
+projects.append(Project("Cinnamon (all sub-projects)", ["cinnamon-translations", "cinnamon-desktop", "cinnamon-menus",
+                                                        "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-screensaver", "cjs",
+                                                        "cinnamon-control-center", "muffin",
+                                                        "cinnamon", "nemo"]))
 projects.append(Project("cjs", ["cjs"]))
 projects.append(Project("cinnamon-desktop", ["cinnamon-desktop"]))
 projects.append(Project("cinnamon-menus", ["cinnamon-menus"]))
@@ -34,19 +45,26 @@ for simple_project in simple_projects:
 projects = sorted(projects, key=lambda x: x.name, reverse=False)
 
 ## Check mint-dev-setup ran successfully
-if not os.path.exists("%s/.mint-dev-setup" % user_home):
+if not os.path.exists(SETTINGS_PATH):
     print("")
     print(" === ERROR ===")
     print("")
     print("Your development environment isn't set up properly. Please run mint-dev-setup.")
     sys.exit(1)
 
+settings = GLib.KeyFile.new()
+settings.load_from_file(SETTINGS_PATH, GLib.KeyFileFlags.KEEP_COMMENTS)
+
+root = settings.get_string(GROUP, SANDBOX_PATH)
+name = settings.get_string(GROUP, SANDBOX_NAME)
+threads = settings.get_integer(GROUP, THREADS)
+
 print("")
 print(" === WARNING ===")
 print("")
 print("This command does the following:")
-print("    - Deletes all build outputs your Sandbox (~/Sandbox/*_*)")
-print("    - Deletes the local version (along with any local changes) for the selected project(s) (~/Sandbox/<projectname>)")
+print("    - Deletes all build outputs in your Sandbox (~/%s/*_*)" % name)
+print("    - Deletes the local version (along with any local changes) for the selected project(s) (~/%s/<projectname>)" % name)
 print("    - Downloads and compiles the selected project(s) from Github's master branch(es)")
 print("    - Installs the packages produced by the compilation (and overrides local versions)")
 print("")
@@ -77,7 +95,7 @@ while selected_project is None:
     if index > 0 and index <= len(projects):
         selected_project = projects[index - 1]
 
-os.chdir("%s/Sandbox" % user_home)
+os.chdir(root)
 os.system("rm -f *_*")  # Remove all packages and build results
 
 for subproject in selected_project.subprojects:
@@ -108,7 +126,7 @@ for subproject in selected_project.subprojects:
     print("   ### Building %s" % subproject)
     print("   #######################################################################")
     print("")
-    os.system("dpkg-buildpackage")
+    os.system("dpkg-buildpackage -us -uc -j%d" % threads)
     print("")
     print("   #######################################################################")
     print("   ### Installing %s" % subproject)

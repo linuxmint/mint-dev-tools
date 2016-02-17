@@ -1,20 +1,27 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
-import os, sys, commands
+import os
+import sys
+import subprocess
 
 lmde_releases = ['debian', 'betsy']
 mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa']
 
+
 class Package:
+
     def __init__(self, name):
         self.name = name
         self.version = None
 
+
 class Release:
+
     def __init__(self, name):
         self.name = name
         self.packages = []
         self.is_lmde = (name in lmde_releases)
+
 
 def read_list(filename):
     array = []
@@ -25,6 +32,7 @@ def read_list(filename):
             continue
         array.append(line)
     return array
+
 
 def remove_version_suffix(version):
     for release in (lmde_releases + mint_releases):
@@ -39,9 +47,9 @@ os.system("mkdir -p .compare-releases")
 os.system("rm -rf .compare-releases/*")
 
 for component in ["main", "upstream", "import"]:
-    print "================================"
-    print component.upper()
-    print ""
+    print("================================")
+    print(component.upper())
+    print("")
 
     release1 = Release(sys.argv[1])
     release2 = Release(sys.argv[2])
@@ -117,6 +125,6 @@ for component in ["main", "upstream", "import"]:
             # Compare versions
             version1 = remove_version_suffix(package.version)
             version2 = remove_version_suffix(equivalent_package.version)
-            output = commands.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
+            output = subprocess.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
             if (output == 'NOK'):
-                print "Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version)
+                print("Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version))

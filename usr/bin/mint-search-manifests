@@ -1,23 +1,28 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
-import os, sys, commands
+import os
+import sys
+
 
 class Package:
+
     def __init__(self, name, version):
         self.name = name
         self.version = version
 
+
 class Release:
+
     def __init__(self, name):
         self.name = name
         self.packages = []
         self.package_names = []
-        self.specific_names =  []
+        self.specific_names = []
 
 if len(sys.argv) != 2:
-    print ""
-    print "Usage: mint-search-manifests package"
-    print ""
+    print("")
+    print("Usage: mint-search-manifests package")
+    print("")
     sys.exit(1)
 
 keyword = sys.argv[1]
@@ -46,8 +51,7 @@ for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
             break
 
     if len(release.packages) > 0:
-        print ""
-        print "%s:" % release.name
+        print("")
+        print("%s:" % release.name)
         for package in release.packages:
-            print "    %s    %s" % (package.name, package.version)
-
+            print("    %s    %s" % (package.name, package.version))

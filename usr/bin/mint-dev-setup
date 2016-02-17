@@ -1,58 +1,91 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-import os, commands
+import os
+import subprocess
+from gi.repository import GLib
 
-user_home = os.path.expanduser('~')
+GROUP = "Mint Development Tools"
+SANDBOX_PATH = "DevRoot"
+SANDBOX_NAME = "RootDisplayName"
+THREADS = "Threads"
+
+USER_HOME = os.path.expanduser('~')
+SETTINGS_PATH = "%s/mint-dev-tools" % GLib.get_user_config_dir()
+
+settings = None
+settings = GLib.KeyFile.new()
+
+if os.path.exists(SETTINGS_PATH):
+    settings.load_from_file(SETTINGS_PATH, GLib.KeyFileFlags.KEEP_COMMENTS)
+
+print("")
+print("Enter the name for your development directory - it will be placed in your home folder.")
+print("")
+dir_name = input("Name of folder (press return to name it 'Sandbox'):  ")
+if dir_name == "":
+    dir_name = "Sandbox"
 
 ## Create Sandbox
-while not os.path.exists("%s/Sandbox" % user_home):
-    print ""
-    print " === CREATING A SANDBOX ==="
-    os.system("mkdir -p ~/Sandbox")
-    print "Your Sandbox was created in ~/Sandbox. This is where you'll do all your development."
+while not os.path.exists("%s/%s" % (USER_HOME, dir_name)):
+    print("")
+    print(" === CREATING A SANDBOX ===")
+    os.system("mkdir -p ~/%s" % dir_name)
+    print("Your sandbox was created in ~/%s. This is where you'll do all your development." % dir_name)
+
+settings.set_string(GROUP, SANDBOX_PATH, "%s/%s" % (USER_HOME, dir_name))
+settings.set_string(GROUP, SANDBOX_NAME, dir_name)
 
 ## Configure Git
-while not os.path.exists("%s/.gitconfig" % user_home):
-    print ""
-    print " === CONFIGURING GIT ==="
-    git_name = raw_input('Enter your GIT username: ').strip()
-    git_email = raw_input('Enter your GIT email: ').strip()
+while not os.path.exists("%s/.gitconfig" % USER_HOME):
+    print("")
+    print(" === CONFIGURING GIT ===")
+    git_name = input('Enter your GIT username: ').strip()
+    git_email = input('Enter your GIT email: ').strip()
     os.system("git config --global user.name \"%s\"" % git_name)
     os.system("git config --global user.email \"%s\"" % git_email)
 
 ## Configure SSH
-while not os.path.exists("%s/.ssh/id_rsa.pub" % user_home):
-    print ""
-    print " === CREATING AN SSH KEY (keep pressing enter for default choices) ==="
+while not os.path.exists("%s/.ssh/id_rsa.pub" % USER_HOME):
+    print("")
+    print(" === CREATING AN SSH KEY (keep pressing enter for default choices) ===")
     os.system("ssh-keygen")
-    print ""
+    print("")
     print("This is your public SSH key, you should now login to your Github account and add that key:")
-    print ""
+    print("")
     os.system("cat ~/.ssh/id_rsa.pub")
 
-## Configure APT source repositories
-while not os.path.exists("/etc/apt/sources.list.d/official-source-repositories.list"):
-    print ""
-    print " === SETTING UP APT SOURCE REPOSITORIES ==="
-    print ""
-    print "You need to tick the option to 'Enable source code repositories' in mintsources."
-    raw_input ("Press ENTER to launch mintsources.")
-    os.system("mintsources")
+print("")
+print(" === REFRESHING APT CACHE ===")
+print("")
+input("Press ENTER to refresh the APT cache.")
+os.system("sudo apt-get update")
 
-## Refresh APT cache
-lsb_codename = commands.getoutput("lsb_release -cs").strip()
-while not os.path.exists("/var/lib/apt/lists/extra.linuxmint.com_dists_%s_main_source_Sources" % lsb_codename):
-    print ""
-    print " === REFRESHING APT CACHE ==="
-    print ""
-    raw_input ("Press ENTER to refresh the APT cache.")
-    os.system("apt update")
+max_threads = int(subprocess.getoutput("cat /proc/cpuinfo | grep processor | wc -l")) + 1
 
-# We're all set, create a .mint-dev-tools so we know everything's fine
-os.system("touch %s/.mint-dev-setup" % user_home)
+print("")
+print("Enter the maximum number of threads to use for compiling.")
+print("This has little effect on smaller projects, but can save a")
+print("a lot of time when compiling Cinnamon.")
+print("")
+print("Maximum recommended for this system: %d" % max_threads)
+print("")
+print("Using less threads will ensure your system remains more responsive")
+print("during compilation, at the cost of it potentially taking longer to complete.")
+print("")
+try:
+    max_threads_user = int(input("Enter the number of threads to use, or press return to use the maximum: "))
+except:
+    max_threads_user = max_threads
+print("")
+print("Compiling with %d threads" % max_threads_user)
 
-print ""
-print " === ALL DONE ==="
-print ""
-print "Your environment is now set up. You can now use mint-dev-build to build projects."
-print ""
+settings.set_integer(GROUP, THREADS, max_threads_user)
+
+# We're all set, save the settings file which has our sandbox path
+settings.save_to_file(SETTINGS_PATH)
+
+print("")
+print(" === ALL DONE ===")
+print("")
+print("Your environment is now set up. You can now use mint-dev-build to build projects.")
+print("")

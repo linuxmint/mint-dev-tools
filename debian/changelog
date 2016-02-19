@@ -1,3 +1,21 @@
+mint-dev-tools (1.0.4) sarah; urgency=medium
+
+  [ Clement Lefebvre ]
+  * Don't filter lts/arch packages during search
+  * Extend mint-compare-releases to also compare upstream and import components
+  * mint-compare-releases: Use package lists
+  * Show more info in mint-compare-releases
+  * Added manifests for recent releases
+  * Blueberry is no longer LMDE-specific
+
+  [ Daniel Alley ]
+  * PEP8 Formatting
+  * convert to Python3
+  * Added mtwebster's dev-setup changes - specify sandbox folder, specify compilation threads
+  * added build support for user-specified threads, user-specified sandbox location
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 19 Feb 2016 11:38:51 +0000
+
 mint-dev-tools (1.0.3) rosa; urgency=medium
 
   * Moved dependencies not required to build projects to recommends

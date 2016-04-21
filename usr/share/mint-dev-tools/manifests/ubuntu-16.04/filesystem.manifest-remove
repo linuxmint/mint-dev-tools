@@ -1,3 +1,4 @@
+a11y-profile-manager
 apt-clone
 archdetect-deb
 btrfs-tools
@@ -7,6 +8,7 @@ cryptsetup
 cryptsetup-bin
 dmeventd
 dmraid
+dmsetup
 dpkg-repack
 ecryptfs-utils
 fcitx
@@ -43,14 +45,17 @@ firefox-locale-zh-hans
 fonts-arphic-ukai
 fonts-arphic-uming
 gir1.2-timezonemap-1.0
-gir1.2-xkl-1.0
+gir1.2-xkl-1.0:amd64
 gparted
 hunspell-de-at
 hunspell-de-ch
 hunspell-de-de
 hunspell-en-ca
+hunspell-en-gb
+hunspell-en-za
 hunspell-fr
 hunspell-fr-classical
+hunspell-it
 hunspell-ru
 hyphen-de
 hyphen-en-us
@@ -103,6 +108,7 @@ libfcitx-qt5-1:amd64
 libgtkmm-2.4-1v5:amd64
 libhangul-data
 libhangul1:amd64
+liblvm2app2.2:amd64
 liblvm2cmd2.02:amd64
 libnss3-1d:amd64
 libparted-fs-resize0:amd64
@@ -135,12 +141,13 @@ libreoffice-l10n-zh-tw
 libtinyxml2.6.2v5:amd64
 libzinnia0v5
 linux-signed-generic
-linux-signed-image-4.3.0-5-generic
+linux-signed-image-4.4.0-21-generic
 linux-signed-image-generic
 localechooser-data
 lupin-casper
 lvm2
 metacity
+mokutil
 mozc-data
 mozc-server
 mozc-utils-gui
@@ -163,7 +170,6 @@ openoffice.org-hyphenation
 presage
 python-crypto
 python-ldb
-python-ntdb
 python-samba
 python-tdb
 python3-icu
@@ -172,7 +178,6 @@ rdate
 reiserfsprogs
 samba-common
 samba-common-bin
-sbsigntool
 tegaki-zinnia-japanese
 thunderbird-locale-de
 thunderbird-locale-en
@@ -197,7 +202,6 @@ ubiquity-frontend-gtk
 ubiquity-slideshow-ubuntu
 ubiquity-ubuntu-artwork
 user-setup
-watershed
 wbrazilian
 wbritish
 wfrench

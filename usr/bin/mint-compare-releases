@@ -120,7 +120,7 @@ for component in ["main", "upstream", "import"]:
                 equivalent_package = package2
                 break
         if equivalent_package is None:
-            print "Package %s (version %s) is missing in %s" % (package.name, package.version, release2.name)
+            print ("Package %s (version %s) is missing in %s" % (package.name, package.version, release2.name))
         else:
             # Compare versions
             version1 = remove_version_suffix(package.version)

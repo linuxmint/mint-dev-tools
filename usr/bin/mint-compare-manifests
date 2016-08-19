@@ -34,6 +34,8 @@ release2 = Release(sys.argv[2])
 
 for release in [release1, release2]:
     release_prefix = release.name.split("-")[0]
+    if "ubuntu" in release_prefix:
+        release_prefix = "ubuntu"
     with open("/usr/share/mint-dev-tools/manifests/%s-specific.list" % release_prefix, 'r') as prefix_file:
         for line in prefix_file:
             line = line.strip()

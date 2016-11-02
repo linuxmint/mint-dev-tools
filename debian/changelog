@@ -1,3 +1,11 @@
+mint-dev-tools (1.0.6) serena; urgency=medium
+
+  * mint-compare-manifests: Use ubuntu as prefix for Ubuntu variants
+  * mint-compare-releases: Fix print statement in python3
+  * Added Mint 18 KDE manifests
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 02 Nov 2016 14:13:52 +0000
+
 mint-dev-tools (1.0.5) sarah; urgency=medium
 
   * Added manifests for Ubuntu 16.04

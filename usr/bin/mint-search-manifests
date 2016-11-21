@@ -19,15 +19,25 @@ class Release:
         self.package_names = []
         self.specific_names = []
 
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print("")
-    print("Usage: mint-search-manifests package")
+    print("Usage: mint-search-manifests package main|all")
     print("")
     sys.exit(1)
 
 keyword = sys.argv[1]
+all = (sys.argv[2] == "all")
+others = ["xfce", "kde", "xubuntu", "kubuntu", "mate", "elementary", "debian", "lmde", "17", "14", "15"]
 
 for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
+    path_is_main = True
+    for other in others:
+            if other in path:
+                path_is_main = False
+                break
+    if not all and not path_is_main:
+        continue
+
     release = Release(path)
     release_prefix = release.name.split("-")[0]
     for manifest in ["/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name,
@@ -51,7 +61,6 @@ for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
             break
 
     if len(release.packages) > 0:
-        print("")
-        print("%s:" % release.name)
+        print("-----------------------------------------------------------------------------------------------------")
         for package in release.packages:
-            print("    %s    %s" % (package.name, package.version))
+            print("{:<30} {:<50} {:<32}".format(release.name, package.name, package.version))

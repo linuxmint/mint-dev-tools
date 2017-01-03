@@ -46,13 +46,10 @@ obsolete_packages = read_list("/usr/share/mint-dev-tools/packages/ignored.list")
 os.system("mkdir -p .compare-releases")
 os.system("rm -rf .compare-releases/*")
 
-for component in ["main", "upstream", "import"]:
-    print("================================")
-    print(component.upper())
-    print("")
+release1 = Release(sys.argv[1])
+release2 = Release(sys.argv[2])
 
-    release1 = Release(sys.argv[1])
-    release2 = Release(sys.argv[2])
+for component in ["main", "upstream", "import", "backport"]:
 
     for release in [release1, release2]:
         os.system("wget -O .compare-releases/sources.gz http://packages.linuxmint.com/dists/%s/%s/source/Sources.gz 2> /dev/null" % (release.name, component))
@@ -73,58 +70,58 @@ for component in ["main", "upstream", "import"]:
 
     os.system("rm -rf .compare-releases/*")
 
-    # Find packages missing in release1
-    for package in release1.packages:
-        if package.name in obsolete_packages:
+# Find packages missing in release1
+for package in release1.packages:
+    if package.name in obsolete_packages:
+        continue
+
+    if release1.is_lmde and not release2.is_lmde:
+        # ignore LMDE-specific packages
+        if package.name in lmde_specific_packages:
             continue
 
-        if release1.is_lmde and not release2.is_lmde:
-            # ignore LMDE-specific packages
-            if package.name in lmde_specific_packages:
-                continue
+        # ignore GTK3-related packages
+        if package.name in ['mint-themes-gtk3']:
+            continue
 
-            # ignore GTK3-related packages
-            if package.name in ['mint-themes-gtk3']:
-                continue
-
-            # ignore debian/lmde packages are they're not supported in Mint
-            found_keyword = False
-            for keyword in ['debian', 'lmde']:
-                if keyword in package.name:
-                    found_keyword = True
-                    break
-            if found_keyword:
-                continue
-
-        if not release1.is_lmde and release2.is_lmde:
-            # ignore Mint/Ubuntu-specific packages
-            if package.name in ubuntu_specific_packages:
-                continue
-
-            # ignore GTK3-related packages
-            if package.name in ['mint-themes-gtk3']:
-                continue
-
-            # ignore KDE/Xfce packages are they're not supported in LMDE
-            found_keyword = False
-            for keyword in ['kde', 'xfce', 'kcm']:
-                if keyword in package.name:
-                    found_keyword = True
-                    break
-            if found_keyword:
-                continue
-
-        equivalent_package = None
-        for package2 in release2.packages:
-            if package2.name == package.name:
-                equivalent_package = package2
+        # ignore debian/lmde packages are they're not supported in Mint
+        found_keyword = False
+        for keyword in ['debian', 'lmde']:
+            if keyword in package.name:
+                found_keyword = True
                 break
-        if equivalent_package is None:
-            print ("Package %s (version %s) is missing in %s" % (package.name, package.version, release2.name))
-        else:
-            # Compare versions
-            version1 = remove_version_suffix(package.version)
-            version2 = remove_version_suffix(equivalent_package.version)
-            output = subprocess.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
-            if (output == 'NOK'):
-                print("Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version))
+        if found_keyword:
+            continue
+
+    if not release1.is_lmde and release2.is_lmde:
+        # ignore Mint/Ubuntu-specific packages
+        if package.name in ubuntu_specific_packages:
+            continue
+
+        # ignore GTK3-related packages
+        if package.name in ['mint-themes-gtk3']:
+            continue
+
+        # ignore KDE/Xfce packages are they're not supported in LMDE
+        found_keyword = False
+        for keyword in ['kde', 'xfce', 'kcm']:
+            if keyword in package.name:
+                found_keyword = True
+                break
+        if found_keyword:
+            continue
+
+    equivalent_package = None
+    for package2 in release2.packages:
+        if package2.name == package.name:
+            equivalent_package = package2
+            break
+    if equivalent_package is None:
+        print ("Package %s (version %s) is missing in %s" % (package.name, package.version, release2.name))
+    else:
+        # Compare versions
+        version1 = remove_version_suffix(package.version)
+        version2 = remove_version_suffix(equivalent_package.version)
+        output = subprocess.getoutput("dpkg --compare-versions %s gt %s && echo 'NOK'" % (version1, version2))
+        if (output == 'NOK'):
+            print("Package %s has a lower version in %s (%s) than in %s (%s)" % (package.name, release2.name, equivalent_package.version, release1.name, package.version))

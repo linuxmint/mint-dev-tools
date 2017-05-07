@@ -1,3 +1,12 @@
+mint-dev-tools (1.0.7) sonya; urgency=medium
+
+  * Update manifests
+  * Format and filter results in mint-search-manifests
+  * mint-compare-releases: Compare across all components (and include backports)
+  * mint-compare-releases: Add support for sarah/serena
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sun, 07 May 2017 16:52:28 +0100
+
 mint-dev-tools (1.0.6) serena; urgency=medium
 
   * mint-compare-manifests: Use ubuntu as prefix for Ubuntu variants

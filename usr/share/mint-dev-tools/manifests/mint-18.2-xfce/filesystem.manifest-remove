@@ -1,0 +1,12 @@
+gir1.2-javascriptcoregtk-4.0:amd64
+gir1.2-webkit2-4.0:amd64
+gparted
+language-selector-common
+libparted-fs-resize0:amd64
+python3-pam
+sbsigntool
+ubiquity
+ubiquity-casper
+ubiquity-frontend-gtk
+ubiquity-slideshow-mint
+ubiquity-ubuntu-artwork

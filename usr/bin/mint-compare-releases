@@ -5,7 +5,7 @@ import sys
 import subprocess
 
 lmde_releases = ['debian', 'betsy']
-mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa', 'sarah', 'serena']
+mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa', 'sarah', 'serena', 'sonya']
 
 
 class Package:

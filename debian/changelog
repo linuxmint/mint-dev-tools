@@ -1,3 +1,13 @@
+mint-dev-tools (1.0.8) sonya; urgency=medium
+
+  * Add manifests for 18.1
+  * Add manifests for 16.04.2
+  * Add manifests for 18.2
+  * mint-compare-releases: Add sonya
+  * mint-compare-releases: Improve output style
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 06 Jul 2017 10:56:41 +0200
+
 mint-dev-tools (1.0.7) sonya; urgency=medium
 
   * Update manifests

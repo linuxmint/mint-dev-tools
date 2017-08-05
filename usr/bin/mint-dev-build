@@ -24,7 +24,7 @@ projects = []
 projects.append(Project("Cinnamon (all sub-projects)", ["cinnamon-translations", "cinnamon-desktop", "cinnamon-menus",
                                                         "cinnamon-session", "cinnamon-settings-daemon", "cinnamon-screensaver", "cjs",
                                                         "cinnamon-control-center", "muffin",
-                                                        "cinnamon", "nemo"]))
+                                                        "cinnamon", "nemo", "xapps"]))
 projects.append(Project("cjs", ["cjs"]))
 projects.append(Project("cinnamon-desktop", ["cinnamon-desktop"]))
 projects.append(Project("cinnamon-menus", ["cinnamon-menus"]))
@@ -37,6 +37,7 @@ projects.append(Project("muffin", ["muffin"]))
 projects.append(Project("cinnamon", ["cinnamon"]))
 projects.append(Project("nemo", ["nemo"]))
 projects.append(Project("mdm", ["mdm"]))
+projects.append(Project("xapps", ["xapps"]))
 
 simple_projects = ['mintupdate', 'mintsources', 'mintlocale', 'mintsystem', 'mintmenu', 'mint-translations', 'mint-common', 'mint-x-icons', 'mintwelcome', 'mintdesktop', 'cinnamon-themes', 'mintstick', 'mintdrivers', 'mintinstall', 'mintnanny', 'mintupload', 'blueberry', 'mint-themes', 'mint-themes-gtk3']
 for simple_project in simple_projects:

@@ -36,6 +36,7 @@ projects.append(Project("cinnamon-Screensaver", ["cinnamon-screensaver"]))
 projects.append(Project("muffin", ["muffin"]))
 projects.append(Project("cinnamon", ["cinnamon"]))
 projects.append(Project("nemo", ["nemo"]))
+projects.append(Project("nemo-extensions", ["nemo-extensions"]))
 projects.append(Project("mdm", ["mdm"]))
 projects.append(Project("xapps", ["xapps"]))
 
@@ -99,7 +100,7 @@ while selected_project is None:
 os.chdir(root)
 os.system("rm -f *_*")  # Remove all packages and build results
 
-for subproject in selected_project.subprojects:
+def removeProject(subproject):
     if os.path.exists(subproject):
         print("")
         print("   #######################################################################")
@@ -108,13 +109,7 @@ for subproject in selected_project.subprojects:
         print("")
         os.system("rm -rf %s" % subproject)
 
-    print("")
-    print("   #######################################################################")
-    print("   ### Downloading build dependencies for %s" % subproject)
-    print("   #######################################################################")
-    print("")
-    os.system("apt build-dep %s" % subproject)
-    print("")
+def cloneProject(subproject):
     print("")
     print("   #######################################################################")
     print("   ### Downloading %s" % subproject)
@@ -122,6 +117,18 @@ for subproject in selected_project.subprojects:
     print("")
     os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
     os.chdir(subproject)
+
+def buildProject(subproject):
+    removeProject(subproject)
+    print("")
+    print("   #######################################################################")
+    print("   ### Downloading build dependencies for %s" % subproject)
+    print("   #######################################################################")
+    print("")
+    os.system("apt build-dep %s" % subproject)
+    print("")
+    if not 'nemo-' in subproject:
+        cloneProject(subproject)
     print("")
     print("   #######################################################################")
     print("   ### Building %s" % subproject)
@@ -139,7 +146,25 @@ for subproject in selected_project.subprojects:
     print("   ### Cleaning up")
     print("   #######################################################################")
     print("")
-    os.system("git clean -df .")
-    os.system("git reset --hard")
+    if not 'nemo-' in subproject:
+        os.system("git clean -df .")
+        os.system("git reset --hard")
     os.chdir("..")
     os.system("rm -f *_*")
+
+
+for subproject in selected_project.subprojects:
+    if subproject == 'nemo-extensions':
+        removeProject(subproject)
+        cloneProject(subproject)
+        subprojectPath = os.path.join(root, subproject)
+        for file in os.listdir(subprojectPath):
+            nemoExtensionName = os.fsdecode(file)
+            nemoExtensionPath = os.path.join(subprojectPath, nemoExtensionName)
+            if not 'nemo-' in nemoExtensionName or not os.path.isdir(nemoExtensionPath):
+                continue
+            os.chdir(nemoExtensionPath)
+            buildProject(nemoExtensionName)
+        os.chdir("..")
+    else:
+        buildProject(subproject)

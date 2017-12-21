@@ -116,10 +116,28 @@ def cloneProject(subproject):
     print("   #######################################################################")
     print("")
     os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
-    os.chdir(subproject)
 
-def buildProject(subproject):
-    removeProject(subproject)
+def buildProject(subproject, root, recursion = 0):
+    subprojectPath = os.path.join(root, subproject)
+
+    # If we are iterating items in a directory because there's no debian file,
+    # filter files here, otherwise the files won't exist yet from the top level
+    # because the project hasn't been cloned yet
+    if recursion > 0 and not os.path.isdir(subprojectPath):
+        return
+
+    hasDebianDir = os.path.exists(os.path.join(subprojectPath, 'debian'))
+    hasGitDir = os.path.exists(os.path.join(subprojectPath, '.git'))
+
+    # Iterate sub-directories if debian directory doesn't exists
+    if not hasDebianDir and hasGitDir:
+        os.chdir(subproject)
+        for file in os.listdir(subprojectPath):
+            subproject = os.fsdecode(file)
+            buildProject(subproject, subprojectPath, recursion + 1)
+        os.chdir("..")
+        return
+
     print("")
     print("   #######################################################################")
     print("   ### Downloading build dependencies for %s" % subproject)
@@ -127,8 +145,14 @@ def buildProject(subproject):
     print("")
     os.system("apt build-dep %s" % subproject)
     print("")
-    if not 'nemo-' in subproject:
+
+    # Don't attempt to git clone if we're iterating inside a sub-directory
+    if recursion == 0:
+        removeProject(subproject)
         cloneProject(subproject)
+
+    os.chdir(subproject)
+
     print("")
     print("   #######################################################################")
     print("   ### Building %s" % subproject)
@@ -146,25 +170,13 @@ def buildProject(subproject):
     print("   ### Cleaning up")
     print("   #######################################################################")
     print("")
-    if not 'nemo-' in subproject:
+
+    if hasGitDir:
         os.system("git clean -df .")
         os.system("git reset --hard")
+
     os.chdir("..")
     os.system("rm -f *_*")
 
-
 for subproject in selected_project.subprojects:
-    if subproject == 'nemo-extensions':
-        removeProject(subproject)
-        cloneProject(subproject)
-        subprojectPath = os.path.join(root, subproject)
-        for file in os.listdir(subprojectPath):
-            nemoExtensionName = os.fsdecode(file)
-            nemoExtensionPath = os.path.join(subprojectPath, nemoExtensionName)
-            if not 'nemo-' in nemoExtensionName or not os.path.isdir(nemoExtensionPath):
-                continue
-            os.chdir(nemoExtensionPath)
-            buildProject(nemoExtensionName)
-        os.chdir("..")
-    else:
-        buildProject(subproject)
+    buildProject(subproject, root)

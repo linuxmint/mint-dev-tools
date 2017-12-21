@@ -36,6 +36,7 @@ projects.append(Project("cinnamon-Screensaver", ["cinnamon-screensaver"]))
 projects.append(Project("muffin", ["muffin"]))
 projects.append(Project("cinnamon", ["cinnamon"]))
 projects.append(Project("nemo", ["nemo"]))
+projects.append(Project("nemo-extensions", ["nemo-extensions"]))
 projects.append(Project("mdm", ["mdm"]))
 projects.append(Project("xapps", ["xapps"]))
 
@@ -99,7 +100,7 @@ while selected_project is None:
 os.chdir(root)
 os.system("rm -f *_*")  # Remove all packages and build results
 
-for subproject in selected_project.subprojects:
+def removeProject(subproject):
     if os.path.exists(subproject):
         print("")
         print("   #######################################################################")
@@ -108,6 +109,35 @@ for subproject in selected_project.subprojects:
         print("")
         os.system("rm -rf %s" % subproject)
 
+def cloneProject(subproject):
+    print("")
+    print("   #######################################################################")
+    print("   ### Downloading %s" % subproject)
+    print("   #######################################################################")
+    print("")
+    os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
+
+def buildProject(subproject, root, recursion = 0):
+    subprojectPath = os.path.join(root, subproject)
+
+    # If we are iterating items in a directory because there's no debian file,
+    # filter files here, otherwise the files won't exist yet from the top level
+    # because the project hasn't been cloned yet
+    if recursion > 0 and not os.path.isdir(subprojectPath):
+        return
+
+    hasDebianDir = os.path.exists(os.path.join(subprojectPath, 'debian'))
+    hasGitDir = os.path.exists(os.path.join(subprojectPath, '.git'))
+
+    # Iterate sub-directories if debian directory doesn't exists
+    if not hasDebianDir and hasGitDir:
+        os.chdir(subproject)
+        for file in os.listdir(subprojectPath):
+            subproject = os.fsdecode(file)
+            buildProject(subproject, subprojectPath, recursion + 1)
+        os.chdir("..")
+        return
+
     print("")
     print("   #######################################################################")
     print("   ### Downloading build dependencies for %s" % subproject)
@@ -115,13 +145,14 @@ for subproject in selected_project.subprojects:
     print("")
     os.system("apt build-dep %s" % subproject)
     print("")
-    print("")
-    print("   #######################################################################")
-    print("   ### Downloading %s" % subproject)
-    print("   #######################################################################")
-    print("")
-    os.system("git clone https://github.com/linuxmint/%s.git" % subproject)
+
+    # Don't attempt to git clone if we're iterating inside a sub-directory
+    if recursion == 0:
+        removeProject(subproject)
+        cloneProject(subproject)
+
     os.chdir(subproject)
+
     print("")
     print("   #######################################################################")
     print("   ### Building %s" % subproject)
@@ -139,7 +170,13 @@ for subproject in selected_project.subprojects:
     print("   ### Cleaning up")
     print("   #######################################################################")
     print("")
-    os.system("git clean -df .")
-    os.system("git reset --hard")
+
+    if hasGitDir:
+        os.system("git clean -df .")
+        os.system("git reset --hard")
+
     os.chdir("..")
     os.system("rm -f *_*")
+
+for subproject in selected_project.subprojects:
+    buildProject(subproject, root)

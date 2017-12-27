@@ -1,0 +1,397 @@
+#!/usr/bin/env python
+
+import polib
+import sys
+import os
+import subprocess
+import threading
+import time
+import urllib
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GObject, GLib, Pango, GdkPixbuf
+GObject.threads_init()
+
+DIGITS = "01234567890"
+ALLOWED = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+COMMON_DATE_TOKENS = "ABeHYDMSmyp"
+COMMON_INT_TOKENS = ["d", "'d", "ld", "I", "Id", "2d", "3d", "I3d", "02d", "I02d", "0d", "N", "Q"]
+COMMON_FLOAT_TOKENS = ["f", "I", "If", ".0f", ".1f", ".2f"]
+COMMON_STR_TOKENS = ["s", "B"]
+COMMON_I_TOKENS = ["i", "li", "I"]
+COMMON_U_TOKENS = ["%'u", "%u", "%Iu", "%I"]
+DATE_THRESHOLD = 2
+
+MO_EXT = ".mo"
+PO_EXT = ".po"
+
+GOOD = 0
+BAD_MISCOUNT = 1
+BAD_MISMATCH = 2
+BAD_UNESCAPED_QUOTE = 3
+BAD_EXCLUSIONS = 80
+BAD_MISCOUNT_MAYBE_DATE = 99
+BAD_MISMATCH_MAYBE_DATE = 100
+RST_SCHAR_MISMATCH = 200
+
+UNSUPPORTED_LOCALES = ["yi"]
+
+(COL_MO, COL_NUMBER, COL_PROJECT, COL_LANGUAGE, COL_MSGID, COL_MSGSTR, COL_ISSUE) = range(7)
+
+# Used as a decorator to run things in the background
+def async(func):
+    def wrapper(*args, **kwargs):
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.daemon = True
+        thread.start()
+        return thread
+    return wrapper
+
+# Used as a decorator to run things in the main loop, from another thread
+def idle(func):
+    def wrapper(*args):
+        GObject.idle_add(func, *args)
+    return wrapper
+
+def allowed(char):
+    return char in ALLOWED
+
+def same_type(token1, token2):
+    if (token1[1:] in COMMON_INT_TOKENS and token2[1:] in COMMON_INT_TOKENS):
+        return True
+    if (token1[1:] in COMMON_FLOAT_TOKENS and token2[1:] in COMMON_FLOAT_TOKENS):
+        return True
+    if (token1[1:] in COMMON_STR_TOKENS and token2[1:] in COMMON_STR_TOKENS):
+        return True
+    if (token1[1:] in COMMON_I_TOKENS and token2[1:] in COMMON_I_TOKENS):
+        return True
+    if (token1 in COMMON_U_TOKENS and token2 in COMMON_U_TOKENS):
+        return True
+    return False
+
+class TokenList(list):
+    def __init__(self):
+        list.__init__(self)
+        self.used_indices = []
+
+    def add(self, entry):
+        position = -1
+        if "$" in entry:
+            position = entry[1:entry.find("$")]
+            self.used_indices.append(position)
+            entry = entry.replace("$", "")
+            entry = entry.replace(position, "")
+            position = int(position)
+        if position == -1 or len(self) == 0 or position > len(self):
+            self.append(entry)
+        else:
+            self.insert(position - 1, entry)
+
+class Mo:
+    def __init__(self, inst, locale, path):
+        self.mofile = inst
+        self.locale = locale.replace(".po", "").split("-")[-1]
+        self.project = path.split("/")[-2]
+        self.current_index = 1
+
+class Main:
+    def __init__(self, file_type):
+        self.type = file_type
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file("/usr/share/mint-dev-tools/mint-check-translations.glade")
+        self.treebox = self.builder.get_object("treebox")
+        self.window = self.builder.get_object("window")
+        self.progressbar = self.builder.get_object("progressbar1")
+        self.window.connect("destroy", Gtk.main_quit)
+
+        self.treeview = Gtk.TreeView()
+        column = Gtk.TreeViewColumn("Project", Gtk.CellRendererText(), markup=COL_PROJECT)
+        self.treeview.append_column(column)
+
+        column = Gtk.TreeViewColumn("Language", Gtk.CellRendererText(), markup=COL_LANGUAGE)
+        self.treeview.append_column(column)
+
+        cr = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("MsgId", cr, text=COL_MSGID)
+        cr.set_property('wrap-mode', Pango.WrapMode.WORD_CHAR)
+        cr.set_property('wrap-width', 450)
+        self.treeview.append_column(column)
+
+        cr = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("MsgStr", cr, text=COL_MSGSTR)
+        cr.set_property('wrap-mode', Pango.WrapMode.WORD_CHAR)
+        cr.set_property('wrap-width', 450)
+        self.treeview.append_column(column)
+
+        column = Gtk.TreeViewColumn("Issue", Gtk.CellRendererText(), markup=COL_ISSUE)
+        self.treeview.append_column(column)
+
+        self.model = Gtk.TreeStore(object, int, str, str, str, str, str) # (COL_MO, COL_NUMBER, COL_PROJECT, COL_LANGUAGE, COL_MSGID, COL_MSGSTR, COL_ISSUE)
+        self.treeview.set_model(self.model)
+
+        self.treebox.add(self.treeview)
+        self.treeview.connect('button_press_event', self.on_button_press_event)
+        self.window.show_all()
+
+        self.load_files()
+
+    def get_status_string(self, status):
+    	if status == BAD_MISCOUNT:
+            return "Number of tokens does not match"
+        elif status == BAD_MISCOUNT_MAYBE_DATE:
+            return "Number of tokens does not match (could be a date/time)"
+        elif status == BAD_MISMATCH:
+            return "Tokens not in correct order or mismatch"
+        elif status == BAD_MISMATCH_MAYBE_DATE:
+            return "Tokens not in correct order or mismatch (could be a date/time)"
+        elif status == BAD_UNESCAPED_QUOTE:
+            return "Bad quotes"
+        elif status == RST_SCHAR_MISMATCH:
+            return "Mistmatch in RST special chars"
+        else:
+            return ""
+
+    @idle
+    def add_issue_to_treeview(self, mo, project, msgid, msgstr, issue, current_index):
+        iter = self.model.insert_before(None, None)
+        self.model.set_value(iter, COL_MO, mo)
+        self.model.set_value(iter, COL_PROJECT, project)
+        language = mo.locale
+        self.model.set_value(iter, COL_LANGUAGE, "<span foreground='blue'>%s</span>" % language)
+        self.model.set_value(iter, COL_MSGID, msgid)
+        self.model.set_value(iter, COL_MSGSTR, msgstr)
+        self.model.set_value(iter, COL_ISSUE, self.get_status_string(issue))
+        self.model.set_value(iter, COL_NUMBER, current_index)
+
+    @idle
+    def report_progress(self, count, total):
+        fraction = float(count) / float(total)
+        self.progressbar.set_fraction(fraction)
+
+    @async
+    def load_files(self):
+        num_files = 0
+        for root, subFolders, files in os.walk(os.getcwd(),topdown=False):
+            for file in files:
+                if self.type == MO_EXT and file.endswith(MO_EXT):
+                    num_files += 1
+                elif file.endswith(PO_EXT):
+                    num_files += 1
+
+        count_files = 0
+        for root, subFolders, files in os.walk(os.getcwd(),topdown=False):
+            for file in files:
+                if self.type == MO_EXT and file.endswith(MO_EXT):
+                    path, junk = os.path.split(root)
+                    path, locale = os.path.split(path)
+                    mo_inst = polib.mofile(os.path.join(root, file))
+                    mo = Mo(mo_inst, locale, os.path.join(root, file))
+                elif file.endswith(PO_EXT):
+                    mo_inst = polib.pofile(os.path.join(root, file))
+                    mo = Mo(mo_inst, file, os.path.join(root, file))
+                    if mo.locale in UNSUPPORTED_LOCALES:
+                        # Don't check PO files for some of the locales (right-to-left languages for instance, or languages where it's hard for us to verify the arguments)
+                        continue
+                else:
+                    continue
+                count_files += 1
+                self.check_file(mo)
+                self.report_progress(count_files, num_files)
+
+    def check_file(self, mo):
+        for entry in mo.mofile:
+            if entry.obsolete:
+                continue # skip obsolete translations (prefixed with #~ in po file)
+            issue_found = False
+            msgid = entry.msgid
+            msgstr = entry.msgstr
+            if ".rst" in str(entry):
+                # restructuredtext
+                for special_char in ["``", "<", ">", "_", "-->", ":kbd:", ":guilabel:", "`"]:
+                    if msgstr != "" and msgid.count(special_char) != msgstr.count(special_char):
+                        issue_found = True
+                        res = RST_SCHAR_MISMATCH
+                        break
+            else:
+                res = self.check_entry(entry.msgid, entry.msgstr)
+                if (res != GOOD and res < BAD_MISCOUNT_MAYBE_DATE):
+                    issue_found = True
+                elif (len(entry.msgstr_plural) > 0):
+                    for plurality in entry.msgstr_plural.keys():
+                        msgstr = entry.msgstr_plural[plurality]
+                        if plurality > 0:
+                            msgid = "plural[%d]: %s" % (plurality, entry.msgid_plural)
+                        else:
+                            msgid = "plural[%d]: %s" % (plurality, entry.msgid)
+                        res = self.check_entry(msgid, msgstr, is_plural=True, is_python=(".py:" in str(entry)))
+                        if (res != GOOD and res < BAD_MISCOUNT_MAYBE_DATE):
+                            issue_found = True
+                            break
+            if issue_found:
+                self.add_issue_to_treeview(mo, mo.project, msgid, msgstr, res, mo.current_index)
+            mo.current_index += 1
+
+    def check_entry(self, msgid, msgstr, is_plural=False, is_python=False):
+        msgid = msgid.replace("%%", " ")
+        msgstr = msgstr.replace("%%", " ")
+        id_tokens = TokenList()
+        str_tokens = TokenList()
+        id_date_count = 0
+        str_date_count = 0
+
+        for idx in range(len(msgid)):
+            try:
+                if msgid[idx] == "%":
+                    if idx > 0 and msgid[idx-1] in DIGITS:
+                        # ignore this token, it's probably a percentage
+                        continue
+                    if idx > 1 and msgid[idx-1] == " " and msgid[idx-2] in DIGITS:
+                        # ignore this token, it's probably a percentage
+                        continue
+                    if msgid[idx-1] > -1 and msgid[idx-1] != "\\":
+                        subidx = 0
+                        if msgid[idx+1] == "(":
+                            while msgid[idx+1+subidx] != ")":
+                                subidx += 1
+                            token = msgid[idx:(idx+subidx+3)]
+                            id_tokens.add(token)
+                        else:
+                            subidx = 0
+                            catch = ""
+                            while True:
+                                subidx += 1
+                                try:
+                                    catch = msgid[idx+subidx]
+                                    if allowed(catch):
+                                        if catch in COMMON_DATE_TOKENS:
+                                            id_date_count += 1
+                                        token = msgid[idx:(idx+subidx+1)]
+                                        id_tokens.add(token)
+                                        break
+                                except IndexError:
+                                    break
+            except:
+                pass
+
+        for idx in range(len(msgstr)):
+            try:
+                if msgstr[idx] == "%":
+                    if idx > 0 and msgstr[idx-1] in DIGITS:
+                        # ignore this token, it's probably a percentage
+                        continue
+                    if idx > 1 and msgstr[idx-1] == " " and msgstr[idx-2] in DIGITS:
+                        # ignore this token, it's probably a percentage
+                        continue
+                    if msgstr[idx-1] > -1 and msgstr[idx-1] != "\\":
+                        subidx = 0
+                        if msgstr[idx+1] == "(":
+                            while msgstr[idx+1+subidx] != ")":
+                                subidx += 1
+                            token = msgstr[idx:(idx+subidx+3)]
+                            str_tokens.add(token)
+                        else:
+                            catch = ""
+                            subidx = 0
+                            while True:
+                                subidx += 1
+                                try:
+                                    catch = msgstr[idx+subidx]
+                                    if allowed(catch):
+                                        if catch in COMMON_DATE_TOKENS:
+                                            str_date_count += 1
+                                        token = msgstr[idx:idx+subidx+1]
+                                        str_tokens.add(token)
+                                        break
+                                except IndexError:
+                                    break
+            except:
+                pass
+        for keyword in ["5%", "0%"]:
+            if keyword in msgid:
+                # Ignore percentages
+                return GOOD
+
+        if msgstr != "":
+            if (is_plural and not is_python):
+                # Plural forms don't have to match the number of arguments in C, but they do in Python
+                return GOOD
+            elif (len(id_tokens) != len(str_tokens)):
+                if id_date_count >= DATE_THRESHOLD or str_date_count >= DATE_THRESHOLD:
+                    return BAD_MISCOUNT_MAYBE_DATE
+                else:
+                    #print "Miscount: %s -- %s" % (id_tokens, str_tokens)
+                    return BAD_MISCOUNT
+            else:
+                mismatch = False
+                for j in range(len(str_tokens)):
+                    id_token = id_tokens[j]
+                    str_token = str_tokens[j]
+                    if id_token != str_token:
+                        if same_type(id_token, str_token):
+                            pass
+                            #print "Same type tokens: %s %s" % (id_token, str_token)
+                        elif "(" in id_token:
+                            #named token, just make sure it corresponds to one of the str_tokens
+                            found_token = False
+                            for token in str_tokens:
+                                if token == id_token:
+                                    found_token = True
+                                    break
+                            if not found_token:
+                                #print "Couldn't find token: %s" % id_token
+                                mismatch = True
+                        else:
+                            mismatch = True
+
+                if (id_date_count >= DATE_THRESHOLD or str_date_count >= DATE_THRESHOLD) and mismatch:
+                    return BAD_MISMATCH_MAYBE_DATE
+                elif mismatch:
+                    #print "Mismatch %s: %s -- %s" % (msgid, id_tokens, str_tokens)
+                    return BAD_MISMATCH
+        return GOOD
+
+    def on_button_press_event(self, widget, event):
+        if event.button == 1 and self.type == PO_EXT:
+            data=widget.get_path_at_pos(int(event.x),int(event.y))
+            if data:
+                path, column, x, y = data
+                if column.get_property('title')=="Language":
+                    iter = self.model.get_iter(path)
+                    project = self.model.get_value(iter, COL_PROJECT)
+                    mo = self.model.get_value(iter, COL_MO)
+                    locale = mo.locale
+                    number = self.model.get_value(iter, COL_NUMBER)
+                    self.go_to_launchpad(project, locale, number)
+                    return False
+
+    def go_to_launchpad(self, project, locale, number):
+        os.system("xdg-open 'https://translations.launchpad.net/linuxmint/latest/+pots/%s/%s/%s/+translate'" % (project, locale, number))
+
+
+def usage(self):
+        print ""
+        print "mint-check-translations: a .po and .mo translation file checker and tweak tool."
+        print ""
+        print "mint-check-translations searches for errors in format tokens, such as incorrect"
+        print "number, non-matching, or out of order conditions.  mint-check-translations will"
+        print "then allow you to fix the offending translations by adding order"
+        print "codes (%1$d, %2$s, etc..) or missing tokens."
+        print ""
+        print "Usage:"
+        print "       mint-check-translations -po : scan recursively from current directory for .po files"
+        print "       mint-check-translations -mo : scan recursively from current directory for .mo files"
+        print " "
+        sys.exit(1)
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-po":
+            file_type = PO_EXT
+        elif sys.argv[1] == "-mo":
+            file_type = MO_EXT
+        else:
+                usage()
+    else:
+        usage()
+    Main(file_type)
+    Gtk.main()

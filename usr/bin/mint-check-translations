@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import argparse
 import polib
 import sys
 import os
@@ -95,8 +96,17 @@ class Mo:
         self.current_index = 1
 
 class Main:
-    def __init__(self, file_type):
-        self.type = file_type
+    def __init__(self):
+        parser = argparse.ArgumentParser(description='Check translation files')
+        parser.add_argument("-m", "--mo", action="store_true", help="Check MO files (default is to check PO files)")
+        parser.add_argument('directory', nargs='?', default=os.getcwd(), help="A directory to check (default is to check the current working directory)")
+        self.args = parser.parse_args()
+
+        if self.args.mo:
+            self.type = MO_EXT
+        else:
+            self.type = PO_EXT
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file("/usr/share/mint-dev-tools/mint-check-translations.glade")
         self.treebox = self.builder.get_object("treebox")
@@ -171,7 +181,7 @@ class Main:
     @async
     def load_files(self):
         num_files = 0
-        for root, subFolders, files in os.walk(os.getcwd(),topdown=False):
+        for root, subFolders, files in os.walk(self.args.directory, topdown=False):
             for file in files:
                 if self.type == MO_EXT and file.endswith(MO_EXT):
                     num_files += 1
@@ -179,7 +189,7 @@ class Main:
                     num_files += 1
 
         count_files = 0
-        for root, subFolders, files in os.walk(os.getcwd(),topdown=False):
+        for root, subFolders, files in os.walk(self.args.directory, topdown=False):
             for file in files:
                 if self.type == MO_EXT and file.endswith(MO_EXT):
                     path, junk = os.path.split(root)
@@ -368,30 +378,6 @@ class Main:
         os.system("xdg-open 'https://translations.launchpad.net/linuxmint/latest/+pots/%s/%s/%s/+translate'" % (project, locale, number))
 
 
-def usage():
-        print ("")
-        print ("mint-check-translations: a .po and .mo translation file checker and tweak tool.")
-        print ("")
-        print ("mint-check-translations searches for errors in format tokens, such as incorrect")
-        print ("number, non-matching, or out of order conditions.  mint-check-translations will")
-        print ("then allow you to fix the offending translations by adding order")
-        print ("codes (%1$d, %2$s, etc..) or missing tokens.")
-        print ("")
-        print ("Usage:")
-        print ("       mint-check-translations -po : scan recursively from current directory for .po files")
-        print ("       mint-check-translations -mo : scan recursively from current directory for .mo files")
-        print (" ")
-        sys.exit(1)
-
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "-po":
-            file_type = PO_EXT
-        elif sys.argv[1] == "-mo":
-            file_type = MO_EXT
-        else:
-                usage()
-    else:
-        usage()
-    Main(file_type)
+    Main()
     Gtk.main()

@@ -368,7 +368,7 @@ class Main:
         os.system("xdg-open 'https://translations.launchpad.net/linuxmint/latest/+pots/%s/%s/%s/+translate'" % (project, locale, number))
 
 
-def usage(self):
+def usage():
         print ""
         print "mint-check-translations: a .po and .mo translation file checker and tweak tool."
         print ""

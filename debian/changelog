@@ -1,3 +1,16 @@
+mint-dev-tools (1.1.0) sylvia; urgency=medium
+
+  [ Jason Hicks ]
+  * Add Nemo extensions (#13)
+
+  [ Clement Lefebvre ]
+  * Add mint-check-translations (mocheck from mint-translations)
+  * mint-check-translations: Fix usage()
+  * mint-check-translations: Port to Python 3
+  * mint-check-translations: Switch to argparse and add a directory argument.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 27 Dec 2017 14:00:08 +0000
+
 mint-dev-tools (1.0.9) sylvia; urgency=medium
 
   [ Jason Hicks ]

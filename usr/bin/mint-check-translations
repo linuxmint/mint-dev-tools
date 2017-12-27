@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 import polib
 import sys
@@ -136,7 +136,7 @@ class Main:
         self.load_files()
 
     def get_status_string(self, status):
-    	if status == BAD_MISCOUNT:
+        if status == BAD_MISCOUNT:
             return "Number of tokens does not match"
         elif status == BAD_MISCOUNT_MAYBE_DATE:
             return "Number of tokens does not match (could be a date/time)"
@@ -319,7 +319,7 @@ class Main:
                 if id_date_count >= DATE_THRESHOLD or str_date_count >= DATE_THRESHOLD:
                     return BAD_MISCOUNT_MAYBE_DATE
                 else:
-                    #print "Miscount: %s -- %s" % (id_tokens, str_tokens)
+                    #print ("Miscount: %s -- %s" % (id_tokens, str_tokens))
                     return BAD_MISCOUNT
             else:
                 mismatch = False
@@ -329,7 +329,7 @@ class Main:
                     if id_token != str_token:
                         if same_type(id_token, str_token):
                             pass
-                            #print "Same type tokens: %s %s" % (id_token, str_token)
+                            #print ("Same type tokens: %s %s" % (id_token, str_token))
                         elif "(" in id_token:
                             #named token, just make sure it corresponds to one of the str_tokens
                             found_token = False
@@ -338,7 +338,7 @@ class Main:
                                     found_token = True
                                     break
                             if not found_token:
-                                #print "Couldn't find token: %s" % id_token
+                                #print ("Couldn't find token: %s" % id_token)
                                 mismatch = True
                         else:
                             mismatch = True
@@ -346,7 +346,7 @@ class Main:
                 if (id_date_count >= DATE_THRESHOLD or str_date_count >= DATE_THRESHOLD) and mismatch:
                     return BAD_MISMATCH_MAYBE_DATE
                 elif mismatch:
-                    #print "Mismatch %s: %s -- %s" % (msgid, id_tokens, str_tokens)
+                    #print ("Mismatch %s: %s -- %s" % (msgid, id_tokens, str_tokens))
                     return BAD_MISMATCH
         return GOOD
 
@@ -369,18 +369,18 @@ class Main:
 
 
 def usage():
-        print ""
-        print "mint-check-translations: a .po and .mo translation file checker and tweak tool."
-        print ""
-        print "mint-check-translations searches for errors in format tokens, such as incorrect"
-        print "number, non-matching, or out of order conditions.  mint-check-translations will"
-        print "then allow you to fix the offending translations by adding order"
-        print "codes (%1$d, %2$s, etc..) or missing tokens."
-        print ""
-        print "Usage:"
-        print "       mint-check-translations -po : scan recursively from current directory for .po files"
-        print "       mint-check-translations -mo : scan recursively from current directory for .mo files"
-        print " "
+        print ("")
+        print ("mint-check-translations: a .po and .mo translation file checker and tweak tool.")
+        print ("")
+        print ("mint-check-translations searches for errors in format tokens, such as incorrect")
+        print ("number, non-matching, or out of order conditions.  mint-check-translations will")
+        print ("then allow you to fix the offending translations by adding order")
+        print ("codes (%1$d, %2$s, etc..) or missing tokens.")
+        print ("")
+        print ("Usage:")
+        print ("       mint-check-translations -po : scan recursively from current directory for .po files")
+        print ("       mint-check-translations -mo : scan recursively from current directory for .mo files")
+        print (" ")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
 import argparse
 import polib
@@ -280,8 +280,8 @@ class Main:
                                         break
                                 except IndexError:
                                     break
-            except:
-                pass
+            except Exception as e:
+                print(e)
 
         for idx in range(len(msgstr)):
             try:
@@ -314,8 +314,9 @@ class Main:
                                         break
                                 except IndexError:
                                     break
-            except:
-                pass
+            except Exception as e:
+                print(e)
+
         for keyword in ["5%", "0%"]:
             if keyword in msgid:
                 # Ignore percentages

@@ -10,7 +10,7 @@ def install():
     print("   ### Installing")
     print("   #######################################################################")
     print("")
-    os.system("sudo dpkg -i ../*.deb")
+    os.system("sudo apt install --yes --allow-downgrades ../*.deb || sudo dpkg -i ../*.deb")
 
 def build():
     print("")

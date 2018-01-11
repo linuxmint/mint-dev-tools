@@ -1,3 +1,9 @@
+mint-dev-tools (1.1.3) sylvia; urgency=medium
+
+  * Add mint-build
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 11 Jan 2018 21:47:15 +0000
+
 mint-dev-tools (1.1.2) sylvia; urgency=medium
 
   * mint-check-translations: Switch back to python2

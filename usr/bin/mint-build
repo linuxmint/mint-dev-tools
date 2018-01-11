@@ -1,0 +1,63 @@
+#!/usr/bin/python3
+
+import sys
+import os
+import argparse
+
+def install():
+    print("")
+    print("   #######################################################################")
+    print("   ### Installing")
+    print("   #######################################################################")
+    print("")
+    os.system("sudo dpkg -i ../*.deb")
+
+def build():
+    print("")
+    print("   #######################################################################")
+    print("   ### Downloading build dependencies")
+    print("   #######################################################################")
+    print("")
+    os.system("DEBIAN_FRONTEND=noninteractive mk-build-deps -i -r -t 'apt-get -y' debian/control")
+    print("")
+
+    print("")
+    print("   #######################################################################")
+    print("   ### Building")
+    print("   #######################################################################")
+    print("")
+    os.system("dpkg-buildpackage")
+
+parser = argparse.ArgumentParser(description='Build project')
+parser.add_argument("-i", "--install", action="store_true", help="Install built packages")
+parser.add_argument('project', nargs='?', default=None, help="A Linux Mint github project name (if not specified, the build occurs in the current directory)")
+args = parser.parse_args()
+
+cwd = os.getcwd()
+
+if args.project is not None:
+    project = sys.argv[1]
+    os.system("mkdir -p %s" % project)
+    os.chdir(project)
+    print("")
+    print("   #######################################################################")
+    print("   ### Cloning %s" % project)
+    print("   #######################################################################")
+    print("")
+    os.system("git clone https://github.com/linuxmint/%s.git" % project)
+    os.chdir(project)
+
+if os.path.exists('debian'):
+    build()
+    if args.install:
+        install()
+else:
+    for subdirectory in os.listdir("."):
+        if os.path.isdir(subdirectory) and os.path.exists(os.path.join(subdirectory, "debian")):
+            os.chdir(subdirectory)
+            build()
+            if args.install:
+                install()
+            os.chdir("..")
+
+os.chdir(cwd)

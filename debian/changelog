@@ -1,3 +1,9 @@
+mint-dev-tools (1.1.4) sylvia; urgency=medium
+
+  * mint-build: Try to install dependencies when installing locally built debs
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 11 Jan 2018 22:40:17 +0000
+
 mint-dev-tools (1.1.3) sylvia; urgency=medium
 
   * Add mint-build

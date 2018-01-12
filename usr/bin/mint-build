@@ -4,13 +4,19 @@ import sys
 import os
 import argparse
 
+def call(command):
+    return_code = os.system(command)
+    if return_code != 0:
+        print("ERROR: '%s' exited with return code %d" % (command, return_code))
+        sys.exit(1)
+
 def install():
     print("")
     print("   #######################################################################")
     print("   ### Installing")
     print("   #######################################################################")
     print("")
-    os.system("sudo apt install --yes --allow-downgrades ../*.deb || sudo dpkg -i ../*.deb")
+    call("sudo apt install --yes --allow-downgrades ../*.deb || sudo dpkg -i ../*.deb")
 
 def build():
     print("")
@@ -18,7 +24,7 @@ def build():
     print("   ### Downloading build dependencies")
     print("   #######################################################################")
     print("")
-    os.system("DEBIAN_FRONTEND=noninteractive mk-build-deps -i -r -t 'apt-get -y' debian/control")
+    call("sudo DEBIAN_FRONTEND=noninteractive mk-build-deps -i -r -t 'apt-get -y' debian/control")
     print("")
 
     print("")
@@ -26,7 +32,7 @@ def build():
     print("   ### Building")
     print("   #######################################################################")
     print("")
-    os.system("dpkg-buildpackage")
+    call("dpkg-buildpackage -us -uc")
 
 parser = argparse.ArgumentParser(description='Build project')
 parser.add_argument("-i", "--install", action="store_true", help="Install built packages")
@@ -37,14 +43,14 @@ cwd = os.getcwd()
 
 if args.project is not None:
     project = sys.argv[1]
-    os.system("mkdir -p %s" % project)
+    call("mkdir -p %s" % project)
     os.chdir(project)
     print("")
     print("   #######################################################################")
     print("   ### Cloning %s" % project)
     print("   #######################################################################")
     print("")
-    os.system("git clone https://github.com/linuxmint/%s.git" % project)
+    call("git clone https://github.com/linuxmint/%s.git" % project)
     os.chdir(project)
 
 if os.path.exists('debian'):

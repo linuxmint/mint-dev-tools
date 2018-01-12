@@ -1,3 +1,9 @@
+mint-dev-tools (1.1.5) sylvia; urgency=medium
+
+  * mint-build: Propagate errors to caller
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 12 Jan 2018 01:07:38 +0000
+
 mint-dev-tools (1.1.4) sylvia; urgency=medium
 
   * mint-build: Try to install dependencies when installing locally built debs

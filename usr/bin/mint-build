@@ -18,7 +18,20 @@ def install():
     print("")
     call("sudo apt install --yes --allow-downgrades ../*.deb || sudo dpkg -i ../*.deb")
 
-def build():
+def build(suffix):
+    if os.path.exists("debian/changelog.orig"):
+        call("mv debian/changelog.orig debian/changelog")
+
+    if (suffix is not None):
+        print("")
+        print("   #######################################################################")
+        print("   ### Adding suffix '%s'" % suffix)
+        print("   #######################################################################")
+        print("")
+        call("cp debian/changelog debian/changelog.orig")
+        call("sed -i '0,/)/s/)/%s)/' debian/changelog" % suffix)
+        print("")
+
     print("")
     print("   #######################################################################")
     print("   ### Downloading build dependencies")
@@ -34,8 +47,12 @@ def build():
     print("")
     call("dpkg-buildpackage -us -uc")
 
+    if os.path.exists("debian/changelog.orig"):
+        call("mv debian/changelog.orig debian/changelog")
+
 parser = argparse.ArgumentParser(description='Build project')
 parser.add_argument("-i", "--install", action="store_true", help="Install built packages")
+parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
 parser.add_argument('project', nargs='?', default=None, help="A Linux Mint github project name (if not specified, the build occurs in the current directory)")
 args = parser.parse_args()
 
@@ -54,14 +71,14 @@ if args.project is not None:
     os.chdir(project)
 
 if os.path.exists('debian'):
-    build()
+    build(args.suffix)
     if args.install:
         install()
 else:
     for subdirectory in os.listdir("."):
         if os.path.isdir(subdirectory) and os.path.exists(os.path.join(subdirectory, "debian")):
             os.chdir(subdirectory)
-            build()
+            build(args.suffix)
             if args.install:
                 install()
             os.chdir("..")

@@ -16,6 +16,10 @@ parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
 parser.add_argument('project', nargs='?', default=None, help="A Linux Mint github project name (if not specified, the build occurs in the current directory)")
 args = parser.parse_args()
 
+current_dir = os.getcwd()
+project_dir = current_dir.split("/")[-1]
+parent_dir = "/".join(current_dir.split("/")[:-1])
+
 # Create the output directory
 output_directory = os.path.join(os.getcwd(), "docker_output", args.image.replace("/", "_"))
 call("mkdir -p %s" % output_directory)
@@ -35,10 +39,10 @@ if args.suffix is not None:
     mintbuild = "%s -s %s" % (mintbuild, args.suffix)
 
 if args.project is None:
-    commands = "apt-get update; cd /volume_in; %(mintbuild)s; mv ../*.* /volume_out" % {'mintbuild':mintbuild}
+    commands = "apt-get update; cd /volume_in/%(project_dir)s; %(mintbuild)s; cp ../*.* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
 else:
-    commands = "apt-get update; %(mintbuild)s; mv %(project)s/*.* /volume_out" % {'mintbuild':mintbuild, 'project':args.project}
+    commands = "apt-get update; %(mintbuild)s; cp %(project)s/*.* /volume_out" % {'mintbuild':mintbuild, 'project':args.project}
 
 # Build in a container
-call("sudo docker run -v %(cwd)s:/volume_in -v %(output_directory)s:/volume_out %(image)s /bin/sh -c \"%(commands)s\"" % {'cwd': os.getcwd(), 'output_directory': output_directory, 'image': args.image, 'commands': commands})
+call("sudo docker run -v %(parent_dir)s:/volume_in -v %(output_directory)s:/volume_out %(image)s /bin/sh -c \"%(commands)s\"" % {'parent_dir': parent_dir, 'output_directory': output_directory, 'image': args.image, 'commands': commands})
 

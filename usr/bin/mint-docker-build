@@ -39,9 +39,9 @@ if args.suffix is not None:
     mintbuild = "%s -s %s" % (mintbuild, args.suffix)
 
 if args.project is None:
-    commands = "apt-get update; cd /volume_in/%(project_dir)s; %(mintbuild)s; cp ../*.* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
+    commands = "apt-get update; cd /volume_in/%(project_dir)s; %(mintbuild)s; cp ../*_* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
 else:
-    commands = "apt-get update; %(mintbuild)s; cp %(project)s/*.* /volume_out" % {'mintbuild':mintbuild, 'project':args.project}
+    commands = "apt-get update; %(mintbuild)s; cp %(project)s/*_* /volume_out" % {'mintbuild':mintbuild, 'project':args.project}
 
 # Build in a container
 call("sudo docker run -v %(parent_dir)s:/volume_in -v %(output_directory)s:/volume_out %(image)s /bin/sh -c \"%(commands)s\"" % {'parent_dir': parent_dir, 'output_directory': output_directory, 'image': args.image, 'commands': commands})

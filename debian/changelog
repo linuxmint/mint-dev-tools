@@ -1,3 +1,12 @@
+mint-dev-tools (1.1.7) sylvia; urgency=medium
+
+  * mint-docker-build: pass parent directory (needed for quilt builds)
+  * mint-docker-build: Small fix
+  * Add manifests for 18.04-daily
+  * mint-build, mint-docker build improvements
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 20 Feb 2018 15:47:49 +0000
+
 mint-dev-tools (1.1.6) sylvia; urgency=medium
 
   * mint-build: Add support for version suffix

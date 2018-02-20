@@ -42,16 +42,21 @@ if args.suffix is not None:
     mintbuild = "%s -s %s" % (mintbuild, args.suffix)
 
 if args.git_repository is None:
-    commands = "apt-get update; mkdir -p /PROJECT; cp -R /volume_in/* /PROJECT/; cd /PROJECT/%(project_dir)s; %(mintbuild)s; cp ../*_* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
+    commands = "cp /host_bin/mint-build /usr/bin/mint-build; apt-get update; mkdir -p /PROJECT; cp -R /volume_in/* /PROJECT/; cd /PROJECT/%(project_dir)s; %(mintbuild)s; cp ../*_* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
 else:
     # If only a name is given, assume the URL is on Linux Mint's github
     project_name = args.git_repository
-    if "://" in args.git_repository:
+    if "://" in args.git_repository or "@" in args.git_repository:
         project_name = args.git_repository.split("/")[-1].replace(".git", "")
-    commands = "apt-get update; %(mintbuild)s; cp %(project)s/*_* /volume_out" % {'mintbuild':mintbuild, 'project':project_name}
+    commands = "cp /host_bin/mint-build /usr/bin/mint-build; apt-get update; apt-get install --yes openssh-client; %(mintbuild)s; cp %(project)s/*_* /volume_out" % {'mintbuild':mintbuild, 'project':project_name}
 
 # Build in a container
-call("sudo docker run -v %(parent_dir)s:/volume_in -v %(output_directory)s:/volume_out %(image)s /bin/sh -c \"%(commands)s\"" % {'parent_dir': parent_dir, 'output_directory': output_directory, 'image': args.image, 'commands': commands})
+ssh_options = ""
+ssh_dir = os.path.expanduser("~/.ssh")
+if os.path.exists(ssh_dir) and args.git_repository is not None:
+    ssh_options = "-v %s:/root/.ssh" % ssh_dir
+
+call("sudo docker run -ti -v /usr/bin:/host_bin %(ssh_options)s -v %(parent_dir)s:/volume_in -v %(output_directory)s:/volume_out %(image)s /bin/sh -c \"%(commands)s\"" % {'ssh_options':ssh_options, 'parent_dir': parent_dir, 'output_directory': output_directory, 'image': args.image, 'commands': commands})
 
 # Fix permissions
 os.system("sudo chown -R `whoami`:`whoami` %s" % output_directory)

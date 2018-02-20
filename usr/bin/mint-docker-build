@@ -13,7 +13,7 @@ def call(command, exit_on_failure=True):
 parser = argparse.ArgumentParser(description='Build in a Docker image')
 parser.add_argument("-i", "--image", help="Docker image", required=True)
 parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
-parser.add_argument('project', nargs='?', default=None, help="A Linux Mint github project name (if not specified, the build occurs in the current directory)")
+parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github)", required=False)
 args = parser.parse_args()
 
 current_dir = os.getcwd()
@@ -21,7 +21,10 @@ project_dir = current_dir.split("/")[-1]
 parent_dir = "/".join(current_dir.split("/")[:-1])
 
 # Create the output directory
-output_directory = os.path.join(os.getcwd(), "docker_output", args.image.replace("/", "_"))
+if args.git_repository is None:
+    output_directory = os.path.join(os.getcwd(), "..", "docker-output", args.image.replace("/", "_"))
+else:
+    output_directory = os.path.join(os.getcwd(), "docker-output", args.image.replace("/", "_"))
 call("mkdir -p %s" % output_directory)
 
 # Kill all containers for this image
@@ -32,17 +35,24 @@ call("sudo docker pull %s" % args.image)
 
 mintbuild = "mint-build"
 
-if args.project is not None:
-    mintbuild = "%s %s" % (mintbuild, args.project)
+if args.git_repository is not None:
+    mintbuild = "%s -g %s" % (mintbuild, args.git_repository)
 
 if args.suffix is not None:
     mintbuild = "%s -s %s" % (mintbuild, args.suffix)
 
-if args.project is None:
-    commands = "apt-get update; cd /volume_in/%(project_dir)s; %(mintbuild)s; cp ../*_* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
+if args.git_repository is None:
+    commands = "apt-get update; mkdir -p /PROJECT; cp -R /volume_in/* /PROJECT/; cd /PROJECT/%(project_dir)s; %(mintbuild)s; cp ../*_* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
 else:
-    commands = "apt-get update; %(mintbuild)s; cp %(project)s/*_* /volume_out" % {'mintbuild':mintbuild, 'project':args.project}
+    # If only a name is given, assume the URL is on Linux Mint's github
+    project_name = args.git_repository
+    if "://" in args.git_repository:
+        project_name = args.git_repository.split("/")[-1].replace(".git", "")
+    commands = "apt-get update; %(mintbuild)s; cp %(project)s/*_* /volume_out" % {'mintbuild':mintbuild, 'project':project_name}
 
 # Build in a container
 call("sudo docker run -v %(parent_dir)s:/volume_in -v %(output_directory)s:/volume_out %(image)s /bin/sh -c \"%(commands)s\"" % {'parent_dir': parent_dir, 'output_directory': output_directory, 'image': args.image, 'commands': commands})
+
+# Fix permissions
+os.system("sudo chown -R `whoami`:`whoami` %s" % output_directory)
 

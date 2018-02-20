@@ -53,22 +53,30 @@ def build(suffix):
 parser = argparse.ArgumentParser(description='Build project')
 parser.add_argument("-i", "--install", action="store_true", help="Install built packages")
 parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
-parser.add_argument('project', nargs='?', default=None, help="A Linux Mint github project name (if not specified, the build occurs in the current directory)")
+parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github)", required=False)
 args = parser.parse_args()
 
 cwd = os.getcwd()
 
-if args.project is not None:
-    project = sys.argv[1]
-    call("mkdir -p %s" % project)
-    os.chdir(project)
+if args.git_repository is not None:
+    project_url = args.git_repository
+    if "://" in project_url:
+        project_name = project_url.split("/")[-1].replace(".git", "")
+    else:
+        # If only a name is given, assume the URL is on Linux Mint's github
+        project_name = project_url
+        project_url = "https://github.com/linuxmint/%s.git" % project_name
+    call("mkdir -p %s" % project_name)
+    os.chdir(project_name)
     print("")
     print("   #######################################################################")
-    print("   ### Cloning %s" % project)
+    print("   ### Cloning %s" % project_name)
     print("   #######################################################################")
     print("")
-    call("git clone https://github.com/linuxmint/%s.git" % project)
-    os.chdir(project)
+    if os.path.exists(project_name):
+        call("rm -rf '%s'" % project_name)
+    call("git clone %s" % project_url)
+    os.chdir(project_name)
 
 if os.path.exists('debian'):
     build(args.suffix)

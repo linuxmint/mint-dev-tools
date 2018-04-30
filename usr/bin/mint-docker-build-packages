@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+
+archs = ["i386", "amd64"]
+
+suffixes = {}
+suffixes["lmde3"] = "cindy"
+suffixes["mint19"] = "tara"
+
+import sys
+import os
+import argparse
+
+def call(command, exit_on_failure=True):
+    return_code = os.system(command)
+    if return_code != 0 and exit_on_failure:
+        print("ERROR: '%s' exited with return code %d" % (command, return_code))
+        sys.exit(1)
+
+parser = argparse.ArgumentParser(description='Build packages via Docker')
+parser.add_argument("-d", "--distributions", help="Distributions (comma separated)", default="mint19,lmde3")
+parser.add_argument("-n", "--without-suffix", help="No suffix", action='store_true', required=False)
+parser.add_argument("-g", "--git-repositories", help="Git clone URLs, or project names (for Mint projects on Github) (comma separated)", required=False)
+args = parser.parse_args()
+
+distributions = args.distributions.split(",")
+
+if os.path.exists("docker-output"):
+    os.system("rm -rf docker-output")
+
+if os.path.exists("docker-output.tar"):
+    os.system("rm -f docker-output.tar")
+
+for distribution in distributions:
+    for arch in archs:
+        docker_image = "linuxmintd/%s-%s" % (distribution, arch)
+        cmd = "mint-docker-build -i %s" % docker_image
+        if not args.without_suffix:
+            cmd = "%s -s +%s" % (cmd, suffixes[distribution])
+        if args.git_repositories is not None:
+            repositories = args.git_repositories.split(",")
+            for repository in repositories:
+                os.system("%s -g %s" % (cmd, repository))
+        else:
+            os.system(cmd)
+
+os.chdir("docker-output")
+for dir_name in os.listdir("."):
+    if os.path.isdir(dir_name) and dir_name.startswith("linuxmintd_"):
+        name = dir_name.replace("linuxmintd_", "")
+        (distribution, arch) = name.split("-")
+        if arch == "amd64":
+            os.system("mv %s %s" % (dir_name, distribution))
+        else:
+            os.system("mkdir -p %s" % distribution)
+            os.system("mv %s %s/i386" % (dir_name, distribution))
+
+os.chdir("..")
+os.system("tar cvf docker-output.tar docker-output")

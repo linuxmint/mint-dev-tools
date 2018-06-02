@@ -1,0 +1,11 @@
+gir1.2-nm-1.0:amd64
+gir1.2-nma-1.0:amd64
+gparted
+language-selector-common
+python3-debconf
+python3-pam
+ubiquity
+ubiquity-casper
+ubiquity-frontend-gtk
+ubiquity-slideshow-mint
+ubiquity-ubuntu-artwork

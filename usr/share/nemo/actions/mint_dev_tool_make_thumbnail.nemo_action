@@ -1,0 +1,13 @@
+[Nemo Action]
+
+Name=Make a thumbnail
+
+Comment=Generate a 500px wide thumbnail with a shadow
+
+Exec=mint-make-thumbnail "%F"
+
+Selection=s
+
+Mimetypes=image/*;
+
+Conditions=dbus org.Cinnamon;

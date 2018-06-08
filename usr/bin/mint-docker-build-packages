@@ -30,17 +30,23 @@ if os.path.exists("docker-output"):
 if os.path.exists("docker-output.tar"):
     os.system("rm -f docker-output.tar")
 
-for distribution in distributions:
-    for arch in archs:
-        docker_image = "linuxmintd/%s-%s" % (distribution, arch)
-        cmd = "mint-docker-build -i %s" % docker_image
-        if not args.without_suffix:
-            cmd = "%s -s +%s" % (cmd, suffixes[distribution])
-        if args.git_repositories is not None:
-            repositories = args.git_repositories.split(",")
-            for repository in repositories:
+if args.git_repositories is not None:
+    repositories = args.git_repositories.split(",")
+    for repository in repositories:
+        for distribution in distributions:
+            for arch in archs:
+                docker_image = "linuxmintd/%s-%s" % (distribution, arch)
+                cmd = "mint-docker-build -i %s" % docker_image
+                if not args.without_suffix:
+                    cmd = "%s -s +%s" % (cmd, suffixes[distribution])
                 os.system("%s -g %s" % (cmd, repository))
-        else:
+else:
+    for distribution in distributions:
+        for arch in archs:
+            docker_image = "linuxmintd/%s-%s" % (distribution, arch)
+            cmd = "mint-docker-build -i %s" % docker_image
+            if not args.without_suffix:
+                cmd = "%s -s +%s" % (cmd, suffixes[distribution])
             os.system(cmd)
 
 os.chdir("docker-output")

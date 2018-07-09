@@ -26,20 +26,19 @@ if len(sys.argv) != 3:
     sys.exit(1)
 
 keyword = sys.argv[1]
-all = (sys.argv[2] == "all")
-others = ["xfce", "kde", "xubuntu", "kubuntu", "mate", "elementary", "debian", "lmde", "17", "14", "15"]
+scope = sys.argv[2]
+if scope == "debian":
+    manifests = ["debian", "lmde"]
+elif scope == "main":
+    manifests = ["ubuntu", "mint"]
+else:
+    manifests = ["debian", "lmde", "ubuntu", "mint", "elementary", "kubuntu", "xubuntu", "zorin"]
 
 for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
-    path_is_main = True
-    for other in others:
-            if other in path:
-                path_is_main = False
-                break
-    if not all and not path_is_main:
-        continue
-
     release = Release(path)
     release_prefix = release.name.split("-")[0]
+    if release_prefix not in manifests:
+        continue
     for manifest in ["/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name,
                      "/usr/share/mint-dev-tools/manifests/%s/filesystem.packages" % release.name]:
         if os.path.exists(manifest):

@@ -48,7 +48,7 @@ for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
                     line = line.strip()
                     if line.startswith('#'):
                         continue
-                    line = line.split("\t")
+                    line = line.split()
                     if len(line) == 2:
                         (package_name, package_version) = line
 

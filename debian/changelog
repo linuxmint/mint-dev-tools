@@ -1,3 +1,20 @@
+mint-dev-tools (1.1.8) tessa; urgency=medium
+
+  * mint-docker-build: Use the local version of /usr/bin/mint-build in the docker container and pass local ssh configuration
+  * Add manifests for Ubuntu 18.04
+  * Add mint-docker-build-packages
+  * Update manifests
+  * Add Mint 19 BETA manifests
+  * Add a Nemo action to make thumbnails
+  * mint-docker-build-packages: Change the build order
+  * mint-search-manifest: Accept space and tabs as delimiters
+  * Manifests: Add debian-live-9.4.0-cinnamon
+  * mint-search-manifests: Add a debian type
+  * mint-build: Add the ability to build a branch or a tag
+  * mint-docker-build-packages: Add support for Betsy and Tessa
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 10 Sep 2018 10:08:21 +0100
+
 mint-dev-tools (1.1.7) sylvia; urgency=medium
 
   * mint-docker-build: pass parent directory (needed for quilt builds)

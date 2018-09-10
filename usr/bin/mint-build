@@ -53,13 +53,16 @@ def build(suffix):
 parser = argparse.ArgumentParser(description='Build project')
 parser.add_argument("-i", "--install", action="store_true", help="Install built packages")
 parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
-parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github)", required=False)
+parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github). Suffix with #tagname or #branchname to specify a branch or a tag to build from.", required=False)
 args = parser.parse_args()
 
 cwd = os.getcwd()
 
 if args.git_repository is not None:
     project_url = args.git_repository
+    tag_branch = None
+    if "#" in project_url:
+        (project_url, tag_branch) = project_url.split("#")
     if "://" in project_url or "@" in project_url:
         project_name = project_url.split("/")[-1].replace(".git", "")
     else:
@@ -70,13 +73,15 @@ if args.git_repository is not None:
     os.chdir(project_name)
     print("")
     print("   #######################################################################")
-    print("   ### Cloning %s" % project_name)
+    print("   ### Cloning %s (branch/tag: %s)" % (project_name, tag_branch))
     print("   #######################################################################")
     print("")
     if os.path.exists(project_name):
         call("rm -rf '%s'" % project_name)
     call("git clone %s" % project_url)
     os.chdir(project_name)
+    if tag_branch is not None:
+        call("git checkout %s" % tag_branch)
 
 if os.path.exists('debian'):
     build(args.suffix)

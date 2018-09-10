@@ -13,7 +13,7 @@ def call(command, exit_on_failure=True):
 parser = argparse.ArgumentParser(description='Build in a Docker image')
 parser.add_argument("-i", "--image", help="Docker image", required=True)
 parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
-parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github)", required=False)
+parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github). Suffix with #tagname or #branchname to specify a branch or a tag to build from.", required=False)
 args = parser.parse_args()
 
 current_dir = os.getcwd()
@@ -45,9 +45,12 @@ if args.git_repository is None:
     commands = "cp /host_bin/mint-build /usr/bin/mint-build; apt-get update; mkdir -p /PROJECT; cp -R /volume_in/* /PROJECT/; cd /PROJECT/%(project_dir)s; %(mintbuild)s; cp ../*_* /volume_out" % {'mintbuild':mintbuild, 'project_dir':project_dir}
 else:
     # If only a name is given, assume the URL is on Linux Mint's github
-    project_name = args.git_repository
-    if "://" in args.git_repository or "@" in args.git_repository:
-        project_name = args.git_repository.split("/")[-1].replace(".git", "")
+    repository = args.git_repository
+    if "#" in repository:
+        repository = repository.split("#")[0]
+    project_name = repository
+    if "://" in repository or "@" in repository:
+        project_name = repository.split("/")[-1].replace(".git", "")
     commands = "cp /host_bin/mint-build /usr/bin/mint-build; apt-get update; apt-get install --yes openssh-client; %(mintbuild)s; cp %(project)s/*_* /volume_out" % {'mintbuild':mintbuild, 'project':project_name}
 
 # Build in a container

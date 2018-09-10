@@ -19,7 +19,7 @@ def call(command, exit_on_failure=True):
 parser = argparse.ArgumentParser(description='Build packages via Docker')
 parser.add_argument("-d", "--distributions", help="Distributions (comma separated)", default="mint19,lmde3")
 parser.add_argument("-n", "--without-suffix", help="No suffix", action='store_true', required=False)
-parser.add_argument("-g", "--git-repositories", help="Git clone URLs, or project names (for Mint projects on Github) (comma separated)", required=False)
+parser.add_argument("-g", "--git-repositories", help="Git clone URLs, or project names (for Mint projects on Github) (comma separated). . Suffix each repo with #tagname or #branchname to specify a branch or a tag to build from.", required=False)
 args = parser.parse_args()
 
 distributions = args.distributions.split(",")

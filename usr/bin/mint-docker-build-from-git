@@ -1,0 +1,106 @@
+#!/usr/bin/python3
+
+archs = ["i386", "amd64"]
+
+suffixes = {}
+suffixes["lmde2"] = "betsy"
+suffixes["lmde3"] = "cindy"
+suffixes["mint19"] = "tara"
+suffixes["mint19.1"] = "tessa"
+
+import sys
+import os
+import argparse
+
+def call(command, exit_on_failure=True):
+    return_code = os.system(command)
+    if return_code != 0 and exit_on_failure:
+        print("ERROR: '%s' exited with return code %d" % (command, return_code))
+        sys.exit(1)
+
+parser = argparse.ArgumentParser(description='Build packages via Docker')
+parser.add_argument("-d", "--distributions", help="Distributions (comma separated)", default="mint19,lmde3")
+parser.add_argument("-n", "--without-suffix", help="No suffix", action='store_true', required=False)
+parser.add_argument("-g", "--git-repositories", help="Git clone URLs, or project names (for Mint projects on Github) (comma separated). . Suffix each repo with #tagname or #branchname to specify a branch or a tag to build from.", required=False)
+args = parser.parse_args()
+
+distributions = args.distributions.split(",")
+repositories = args.git_repositories.split(",")
+
+# Clean up
+if os.path.exists("docker-output"):
+    os.system("rm -rf docker-output")
+
+if os.path.exists("docker-output.tar"):
+    os.system("rm -f docker-output.tar")
+
+current_dir = os.getcwd()
+project_dir = current_dir.split("/")[-1]
+parent_dir = "/".join(current_dir.split("/")[:-1])
+
+ssh_options = ""
+ssh_dir = os.path.expanduser("~/.ssh")
+if os.path.exists(ssh_dir):
+    ssh_options = "-v %s:/root/.ssh" % ssh_dir
+
+for distribution in distributions:
+    for arch in archs:
+        docker_image = "linuxmintd/%s-%s" % (distribution, arch)
+        container = "mintbuild-%s-%s" % (distribution, arch)
+        print("---------------------------------------------")
+        print(" CONTAINER: %s" % container)
+        print("---------------------------------------------")
+
+        # Build commands (to be run in docker)
+        commands = []
+        commands.append("cp /host_bin/mint-build /usr/bin/mint-build")
+        commands.append("apt-get update")
+        commands.append("apt-get install --yes openssh-client")
+        for repository in repositories:
+            mintbuild = "mint-build -i -g %s" % repository
+            if not args.without_suffix:
+                mintbuild = "%s -s +%s" % (mintbuild, suffixes[distribution])
+            # If only a name is given, assume the URL is on Linux Mint's github
+            if "#" in repository:
+                repository = repository.split("#")[0]
+            project_name = repository
+            if "://" in repository or "@" in repository:
+                project_name = repository.split("/")[-1].replace(".git", "")
+            commands.append(mintbuild)
+            commands.append("cp %s/*_* /volume_out"  % project_name)
+
+        # Create the output directory
+        output_directory = os.path.join(os.getcwd(), "docker-output", docker_image.replace("/", "_"))
+        call("mkdir -p %s" % output_directory)
+
+        # Kill mintbuild container
+        call("docker stop %s" % container, exit_on_failure=False)
+        call("docker rm %s" % container, exit_on_failure=False)
+
+        # Recreate the container
+        call("docker pull %s" % docker_image)
+        call("docker run -it -v /usr/bin:/host_bin %(ssh_options)s -v %(parent_dir)s:/volume_in -v %(output_directory)s:/volume_out --name %(container)s -h %(container)s -d %(image)s"  % {'ssh_options':ssh_options, 'parent_dir': parent_dir, 'output_directory': output_directory, 'image': docker_image, 'container': container})
+
+        # Fix permissions
+        #os.system("sudo chown -R `whoami`:`whoami` %s" % output_directory)
+
+        for command in commands:
+            print("---------------------------------------------")
+            print(" RUNNING: %s" % command)
+            print("---------------------------------------------")
+            call("docker exec -e COLUMNS=\"`tput cols`\" -e LINES=\"`tput lines`\" -it %s /bin/sh -c \"%s\"" % (container, command))
+
+# Clean up
+os.chdir("docker-output")
+for dir_name in os.listdir("."):
+    if os.path.isdir(dir_name) and dir_name.startswith("linuxmintd_"):
+        name = dir_name.replace("linuxmintd_", "")
+        (distribution, arch) = name.split("-")
+        if arch == "amd64":
+            os.system("mv %s %s" % (dir_name, distribution))
+        else:
+            os.system("mkdir -p %s" % distribution)
+            os.system("mv %s %s/i386" % (dir_name, distribution))
+
+os.chdir("..")
+os.system("tar cvf docker-output.tar docker-output")

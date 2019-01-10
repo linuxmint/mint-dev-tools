@@ -1,3 +1,11 @@
+mint-dev-tools (1.2.0) tessa; urgency=medium
+
+  * mint-compare-releases: Add support for cindy, tara and tessa
+  * Add a script to build git projects in the same image
+  * Add cinnamon-stats-tracker and mint-dev-settings
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 10 Jan 2019 17:03:33 +0000
+
 mint-dev-tools (1.1.9) tessa; urgency=medium
 
   * Update manifests

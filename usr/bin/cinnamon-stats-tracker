@@ -1,0 +1,81 @@
+#!/usr/bin/python3
+import gi
+import os
+import psutil
+import subprocess
+import time
+gi.require_version('Gtk', '3.0')
+gi.require_version('Notify', '0.7')
+from gi.repository import Gtk, Gio, Notify
+
+class Monitor():
+
+    def __init__(self):
+        self.pid = subprocess.check_output('pidof cinnamon', encoding='UTF-8', shell=True).strip()
+        self.process = psutil.Process(int(self.pid))
+
+    def get_used_memory(self):
+        # Used memory in MB
+        mem = self.process.memory_info()
+        memory = round(((mem.rss - mem.shared) / 1024 / 1024))
+        return ("%d MB" % memory)
+
+    def get_start_logs(self):
+        # Start logs
+        logs = ""
+        with open(os.path.expanduser("~/.cinnamon/glass.log")) as log_file:
+            logs = log_file.read().strip()
+        return logs
+
+    def get_cpu_time(self):
+        # Used CPU time
+        cpu = self.process.cpu_times()
+        used = cpu.user + cpu.children_user + cpu.system + cpu.children_system
+        t = time.strftime('%H:%M:%S', time.gmtime(used))
+        return t
+
+def print_and_save(output_file, data):
+    print(data)
+    output_file.write(data + "\n")
+
+def show_stats(notif, action):
+    subprocess.Popen(["xdg-open", os.path.expanduser("~/.cinnamon/stats.log")])
+    notif.close()
+    Gtk.main_quit()
+
+if __name__ == '__main__':
+
+    settings = Gio.Settings("com.linuxmint.dev")
+    interval = settings.get_int("cinnamon-stats-tracker-interval")
+    measures = settings.get_int("cinnamon-stats-tracker-measures")
+
+    Notify.init("cinnamon-stats-tracker")
+
+    notification = Notify.Notification.new("Stats Tracker Started", "The Cinnamon stats are being tracked right now. Don't interact with Cinnamon for the next 10 minutes. A notification will pop up when the tracker is finished.", "cinnamon-symbolic")
+    notification.show()
+
+    with open(os.path.expanduser("~/.cinnamon/stats.log"), "w") as output_file:
+        monitor = Monitor()
+        print_and_save(output_file, "---------------------------------------------")
+        print_and_save(output_file, "  INITIAL STATS")
+        print_and_save(output_file, "---------------------------------------------")
+        print_and_save(output_file, "PID %s" % monitor.pid)
+        print_and_save(output_file, monitor.get_start_logs())
+        print_and_save(output_file, "RAM: %s" % monitor.get_used_memory())
+        print_and_save(output_file, "CPU time: %s" % monitor.get_cpu_time())
+
+        if (measures > 0):
+            for i in range(measures):
+                time.sleep(interval)
+                print_and_save(output_file, "---------------------------------------------")
+                print_and_save(output_file, "  AFTER %d minutes" % (round(interval/60) * (i+1)))
+                print_and_save(output_file, "---------------------------------------------")
+                print_and_save(output_file, "RAM: %s" % monitor.get_used_memory())
+                print_and_save(output_file, "CPU time: %s" % monitor.get_cpu_time())
+
+    notification = Notify.Notification.new("Stats Tracker Finished", "The stats were successfully recorded in ~/.cinnamon/stats.log. You can now launch apps and use Cinnamon normally.", "cinnamon-symbolic")
+    notification.add_action("action_show", "Show stats", show_stats)
+    notification.set_urgency(Notify.Urgency.CRITICAL)
+    notification.connect("closed", Gtk.main_quit)
+    notification.show()
+    Gtk.main()

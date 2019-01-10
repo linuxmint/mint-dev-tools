@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Mint Development Settings
+Comment=Settings for Mint development
+Exec=mint-dev-settings
+Terminal=false
+Icon=mint-dev-settings
+Categories=Development;
+StartupNotify=false

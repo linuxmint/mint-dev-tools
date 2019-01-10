@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="com.linuxmint.dev" path="/com/linuxmint/dev/">
+    <key type="b" name="cinnamon-stats-tracker-enabled">
+      <default>false</default>
+      <summary></summary>
+      <description></description>
+    </key>
+    <key type="i" name="cinnamon-stats-tracker-interval">
+      <default>600</default>
+      <summary></summary>
+      <description></description>
+    </key>
+    <key type="i" name="cinnamon-stats-tracker-measures">
+      <default>1</default>
+      <summary></summary>
+      <description></description>
+    </key>
+  </schema>
+</schemalist>

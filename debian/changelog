@@ -1,3 +1,12 @@
+mint-dev-tools (1.2.2) tessa; urgency=medium
+
+  * cinnamon-stats-tracker: Flush when writing to file
+  * cinnamon-stats-tracker: Track more stats
+  * cinnamon-stats-tracker: Fix cpu_num != num_cpu :)
+  * cinnamon-stats-tracker: Fix compatibility with older releases
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 11 Jan 2019 16:32:41 +0000
+
 mint-dev-tools (1.2.1) tessa; urgency=medium
 
   * Packaging: Add dependency on python3-psutil

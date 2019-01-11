@@ -22,9 +22,22 @@ class Monitor():
 
     def get_start_logs(self):
         # Start logs
-        logs = ""
-        with open(os.path.expanduser("~/.cinnamon/glass.log")) as log_file:
-            logs = log_file.read().strip()
+        logs = []
+        log_file = os.path.expanduser("~/.xsession-errors")
+        if os.path.exists(log_file):
+            with open(log_file) as handle:
+                for line in handle:
+                    line = line.strip()
+                    if "LookingGlass/info" in line:
+                        try:
+                            line = " ".join(line.split()[5:])
+                            if "Cinnamon.AppSystem.get_default" in line:
+                                # Start of a new Cinnamon instance, ditch previous lines
+                                logs = []
+                            if " ms" in line:
+                                logs.append(line)
+                        except Exception as e:
+                            pass # ignore lines with different formats
         return logs
 
     def get_cpu_time(self):
@@ -60,7 +73,7 @@ if __name__ == '__main__':
         print_and_save(output_file, "  INITIAL STATS")
         print_and_save(output_file, "---------------------------------------------")
         print_and_save(output_file, "PID %s" % monitor.pid)
-        print_and_save(output_file, monitor.get_start_logs())
+        print_and_save(output_file, "\n".join(monitor.get_start_logs()))
         print_and_save(output_file, "RAM: %s" % monitor.get_used_memory())
         print_and_save(output_file, "CPU time: %s" % monitor.get_cpu_time())
 

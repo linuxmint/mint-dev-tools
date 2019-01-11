@@ -50,6 +50,7 @@ class Monitor():
 def print_and_save(output_file, data):
     print(data)
     output_file.write(data + "\n")
+    output_file.flush()
 
 def show_stats(notif, action):
     subprocess.Popen(["xdg-open", os.path.expanduser("~/.cinnamon/stats.log")])

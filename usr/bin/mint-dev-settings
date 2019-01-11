@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('XApp', '1.0')
-from gi.repository import Gtk, Gio, XApp
+from gi.repository import Gtk, Gio
 
 STATS_TRACKER_ENABLED_KEY = "cinnamon-stats-tracker-enabled"
 STATS_TRACKER_INTERVAL_KEY = "cinnamon-stats-tracker-interval"

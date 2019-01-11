@@ -52,7 +52,7 @@ class Monitor():
         with self.process.oneshot():
             # cpu_percent can be more than 100%, it's the sum of all cores percentages
             # so we divide it by the number of cpu/cores being used by the process
-            percentage = self.process.cpu_percent() / self.process.cpu_num()
+            percentage = self.process.cpu_percent() / psutil.cpu_count()
             percentage = round(percentage, 2)
         return percentage
 

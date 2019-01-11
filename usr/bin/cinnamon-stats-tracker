@@ -17,7 +17,7 @@ class Monitor():
     def get_used_memory(self):
         # Used memory in MB
         mem = self.process.memory_info()
-        memory = round(((mem.rss - mem.shared) / 1024 / 1024))
+        memory = to_megabytes(mem.rss - mem.shared)
         return ("%d MB" % memory)
 
     def get_start_logs(self):
@@ -47,6 +47,15 @@ class Monitor():
         t = time.strftime('%H:%M:%S', time.gmtime(used))
         return t
 
+    def get_cpu_percentage(self):
+        # Avg CPU percentage (since last call)
+        with self.process.oneshot():
+            # cpu_percent can be more than 100%, it's the sum of all cores percentages
+            # so we divide it by the number of cpu/cores being used by the process
+            percentage = self.process.cpu_percent() / self.process.cpu_num()
+            percentage = round(percentage, 2)
+        return percentage
+
 def print_and_save(output_file, data):
     print(data)
     output_file.write(data + "\n")
@@ -56,6 +65,9 @@ def show_stats(notif, action):
     subprocess.Popen(["xdg-open", os.path.expanduser("~/.cinnamon/stats.log")])
     notif.close()
     Gtk.main_quit()
+
+def to_megabytes(num_bytes):
+    return round(((num_bytes) / 1024 / 1024))
 
 if __name__ == '__main__':
 
@@ -70,22 +82,28 @@ if __name__ == '__main__':
 
     with open(os.path.expanduser("~/.cinnamon/stats.log"), "w") as output_file:
         monitor = Monitor()
+        process = monitor.process
+        io = process.io_counters()
         print_and_save(output_file, "---------------------------------------------")
         print_and_save(output_file, "  INITIAL STATS")
         print_and_save(output_file, "---------------------------------------------")
         print_and_save(output_file, "PID %s" % monitor.pid)
         print_and_save(output_file, "\n".join(monitor.get_start_logs()))
         print_and_save(output_file, "RAM: %s" % monitor.get_used_memory())
-        print_and_save(output_file, "CPU time: %s" % monitor.get_cpu_time())
+        print_and_save(output_file, "CPU: %s (%s threads)" % (monitor.get_cpu_time(), process.num_threads()))
+        monitor.get_cpu_percentage() # Call this but don't use the value, it's always 0%. This initializes the reading for the next call.
+        print_and_save(output_file, "I/O: %s FDS, %s MB read, %s MB written" % (process.num_fds(), to_megabytes(io.read_bytes), to_megabytes(io.write_bytes)))
 
         if (measures > 0):
             for i in range(measures):
                 time.sleep(interval)
+                io = process.io_counters()
                 print_and_save(output_file, "---------------------------------------------")
                 print_and_save(output_file, "  AFTER %d minutes" % (round(interval/60) * (i+1)))
                 print_and_save(output_file, "---------------------------------------------")
                 print_and_save(output_file, "RAM: %s" % monitor.get_used_memory())
-                print_and_save(output_file, "CPU time: %s" % monitor.get_cpu_time())
+                print_and_save(output_file, "CPU: %s - avg %s%% (%s threads)" % (monitor.get_cpu_time(), monitor.get_cpu_percentage(), process.num_threads()))
+                print_and_save(output_file, "I/O: %s FDS, %s MB read, %s MB written" % (process.num_fds(), to_megabytes(io.read_bytes), to_megabytes(io.write_bytes)))
 
     notification = Notify.Notification.new("Stats Tracker Finished", "The stats were successfully recorded in ~/.cinnamon/stats.log. You can now launch apps and use Cinnamon normally.", "cinnamon-symbolic")
     notification.add_action("action_show", "Show stats", show_stats)

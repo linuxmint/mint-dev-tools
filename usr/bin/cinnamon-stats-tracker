@@ -56,7 +56,6 @@ def sleep(interval, output_file):
         now = time.monotonic()
         if not monitor.poll.poll(1):
             continue
-        print_and_save(output_file, "---------------------------------------------")
         print_and_save(output_file, monitor.get_log_line())
 
 def main_quit(notif):

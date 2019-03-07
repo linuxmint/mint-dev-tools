@@ -27,18 +27,25 @@ if len(sys.argv) != 3:
 
 keyword = sys.argv[1]
 scope = sys.argv[2]
+scoped_version = None
 if scope == "debian":
     manifests = ["debian", "lmde"]
 elif scope == "main":
     manifests = ["ubuntu", "mint"]
-else:
+elif scope == "all":
     manifests = ["debian", "lmde", "ubuntu", "mint", "elementary", "kubuntu", "xubuntu", "zorin"]
+else:
+    scoped_version = scope
 
 for path in sorted(os.listdir("/usr/share/mint-dev-tools/manifests")):
     release = Release(path)
     release_prefix = release.name.split("-")[0]
-    if release_prefix not in manifests:
-        continue
+    if scoped_version is not None:
+        if release.name != scoped_version:
+            continue
+    else:
+        if release_prefix not in manifests:
+            continue
     for manifest in ["/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name,
                      "/usr/share/mint-dev-tools/manifests/%s/filesystem.packages" % release.name]:
         if os.path.exists(manifest):

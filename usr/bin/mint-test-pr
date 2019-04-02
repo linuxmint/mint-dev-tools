@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import tempfile
+from gi.repository import GLib
+
+GROUP = 'Mint Development Tools'
+THREADS = 'Threads'
+SETTINGS_PATH = '%s/mint-dev-tools' % GLib.get_user_config_dir()
+
+def message(message_text):
+    print('')
+    print('   #######################################################################')
+    print('   ### %s' % message_text)
+    print('   #######################################################################')
+    print('')
+
+settings = GLib.KeyFile.new()
+settings.load_from_file(SETTINGS_PATH, GLib.KeyFileFlags.KEEP_COMMENTS)
+threads = settings.get_integer(GROUP, THREADS)
+
+if len(sys.argv) < 3:
+    print('usage:\n')
+    print('    mint-test-pr <project> <pull request number>\n')
+    print('    mint-test-pr <project> <pull request number> <deb directory>\n')
+    quit()
+
+project = sys.argv[1]
+pull_id = sys.argv[2]
+if len(sys.argv) > 3:
+    deb_dir = os.path.abspath(sys.argv[3])
+
+with tempfile.TemporaryDirectory() as directory:
+    os.chdir(directory)
+    os.system('git clone https://github.com/linuxmint/%s.git' % project)
+    os.chdir(project)
+
+    message('Downloading build dependencies for %s' % project)
+    os.system('apt build-dep %s' % project)
+
+    # checkout pr branch
+    os.system('git fetch origin pull/%s/head:%s' % (pull_id, pull_id))
+    os.system('git checkout %s' % pull_id)
+
+    message('Building %s' % project)
+    os.system('dpkg-buildpackage -us -uc -j%d' % threads)
+
+    if len(sys.argv) > 3:
+        message('Moving debs to %s' % deb_dir)
+        os.makedirs(deb_dir, exist_ok=True)
+        os.system('cp ../*.deb %s' % deb_dir)
+
+    else:
+        message('Installing %s' % project)
+        os.system('sudo dpkg -i ../*.deb')

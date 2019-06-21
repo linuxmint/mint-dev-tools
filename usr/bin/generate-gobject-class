@@ -1,0 +1,202 @@
+#! /usr/bin/python3
+
+import os
+import sys
+import argparse
+
+declare_final = """G_DECLARE_FINAL_TYPE (<Prefix><Class>, <prefix>_<class>, <PREFIX>, <CLASS>, <ParentClass>)"""
+
+declare_derivable = """G_DECLARE_DERIVABLE_TYPE (<Prefix><Class>, <prefix>_<class>, <PREFIX>, <CLASS>, <ParentClass>)
+
+struct _<Prefix><Class>Class
+{
+    <ParentClass>Class parent_class;
+
+    gpointer padding[12];
+};"""
+
+h_template = """#ifndef __<PREFIX>_<CLASS>_H__
+#define __<PREFIX>_<CLASS>_H__
+
+#include <gtk/gtk.h>
+
+G_BEGIN_DECLS
+
+#define <PREFIX>_TYPE_<CLASS> <prefix>_<class>_get_type ()
+<declare>
+
+<Prefix><Class> *<prefix>_<class>_new ();
+
+G_END_DECLS
+
+#endif  /* __<PREFIX>_<CLASS>_H__  */
+"""
+
+instance_struct = """
+struct _<Prefix><Class>
+{
+    <ParentClass> parent_instance;
+
+    /*< private > */
+    <Prefix><Class>Private *priv;
+};
+"""
+
+c_template = """#include "<project-prefix>-<class-name>.h"
+
+typedef struct
+{
+} <Prefix><Class>Private;
+<instance_struct>
+G_DEFINE_TYPE_WITH_PRIVATE(<Prefix><Class>, <prefix>_<class>, <PARENT_TYPE_CLASS>)
+
+enum
+{
+    PROP_0,
+    N_PROPERTIES
+};
+
+static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+
+static void
+<prefix>_<class>_set_property (GObject    *object,
+<padding>                guint       prop_id,
+<padding>                const       GValue *value,
+<padding>                GParamSpec *pspec)
+{
+    <Prefix><Class> *<class> = <PREFIX>_<CLASS> (object);
+
+    switch (prop_id)
+    {
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+            break;
+    }
+}
+
+static void
+<prefix>_<class>_get_property (GObject    *object,
+<padding>                guint       prop_id,
+<padding>                GValue     *value,
+<padding>                GParamSpec *pspec)
+{
+    <Prefix><Class> *<class> = <PREFIX>_<CLASS> (object);
+
+    switch (prop_id)
+    {
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+            break;
+    }
+}
+
+static void
+<prefix>_<class>_init (<Prefix><Class> *<class>)
+{
+    <Prefix><Class>Private *priv = <prefix>_<class>_get_instance_private (<class>);
+}
+
+static void
+<prefix>_<class>_dispose (GObject *object)
+{
+    <Prefix><Class> *<class> = <PREFIX>_<CLASS> (object);
+
+    G_OBJECT_CLASS (<prefix>_<class>_parent_class)->dispose (object);
+}
+
+static void
+<prefix>_<class>_finalize (GObject *object)
+{
+    <Prefix><Class> *<class> = <PREFIX>_<CLASS> (object);
+
+    G_OBJECT_CLASS (<prefix>_<class>_parent_class)->finalize (object);
+}
+
+static void
+<prefix>_<class>_class_init (<Prefix><Class>Class *klass)
+{
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+    object_class->dispose = <prefix>_<class>_dispose;
+    object_class->finalize = <prefix>_<class>_finalize;
+    object_class->set_property = <prefix>_<class>_set_property;
+    object_class->get_property = <prefix>_<class>_get_property;
+
+    g_object_class_install_properties (object_class, N_PROPERTIES, obj_properties);
+}
+
+<Prefix><Class> *
+<prefix>_<class>_new ()
+{
+    <Prefix><Class> *<class>;
+    <class> = g_object_new (<PREFIX>_TYPE_<CLASS>, NULL);
+
+    return <class>;
+}
+"""
+
+parser = argparse.ArgumentParser(description='create a new template class')
+parser.add_argument('-d', '--derivable', dest='derivable', action='store_true',
+                    help='if given, the class type will be derivable, otherwise it will be final')
+parser.add_argument('prefix', help='The class prefix. It should be camel case with underscores between words')
+parser.add_argument('class_name', help='The class name. It should be camel case with underscores between words')
+parser.add_argument('parent_class', help='The parent class. It should be upper case with underscores between words')
+parser.add_argument('path', help='The path to where the files should be created')
+
+args = parser.parse_args()
+
+# prefix = sys.argv[1]
+# class_name = sys.argv[2]
+# parent_class = sys.argv[3]
+# path = os.path.abspath(sys.argv[4])
+
+def strip(string):
+    return ''.join(string.split('_'))
+
+def camel(string):
+    parts = string.split('_')
+    new_parts = []
+    for part in parts:
+        new_parts.append(part.title())
+    # [part[0].upper() for part in parts]
+    return ''.join(new_parts)
+
+def untype(string):
+    return camel(string).replace('Type', '')
+
+def hyphen(string):
+    return string.replace('_', '-').lower()
+
+replacements = [
+    ('<ParentClass>', untype(args.parent_class)),
+    ('<PARENT_TYPE_CLASS>', args.parent_class),
+    ('<prefix>', args.prefix.lower()),
+    ('<Prefix>', strip(args.prefix)),
+    ('<PREFIX>', args.prefix.upper()),
+    ('<class>', args.class_name.lower()),
+    ('<Class>', strip(args.class_name)),
+    ('<CLASS>', args.class_name.upper()),
+    ('<project-prefix>', hyphen(args.prefix)),
+    ('<class-name>', hyphen(args.class_name)),
+    ('<padding>', ' ' * (len(args.prefix) + len(args.class_name)))
+]
+
+if args.derivable:
+    h_output = h_template.replace('<declare>', declare_derivable)
+    c_output = c_template.replace('<instance_struct>', '')
+else:
+    h_output = h_template.replace('<declare>', declare_final)
+    c_output = c_template.replace('<instance_struct>', instance_struct)
+
+
+for replacement in replacements:
+    h_output = h_output.replace(replacement[0], replacement[1])
+    c_output = c_output.replace(replacement[0], replacement[1])
+
+c_path = os.path.join(args.path, '%s.c' % hyphen('_'.join([args.prefix, args.class_name])))
+with open(c_path, 'w') as c_file:
+    c_file.write(c_output)
+
+h_path = os.path.join(args.path, '%s.h' % hyphen('_'.join([args.prefix, args.class_name])))
+with open(h_path, 'w') as h_file:
+    h_file.write(h_output)

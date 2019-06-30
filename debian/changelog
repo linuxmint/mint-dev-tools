@@ -1,3 +1,20 @@
+mint-dev-tools (1.2.3) tina; urgency=medium
+
+  [ Clement Lefebvre ]
+  * mint-search-manifests: Allow to specify a release
+  * Add Mint 19.1 manifests
+
+  [ Stephen Collins ]
+  * Add a script to generate the files for a gobject subclass (#19)
+
+  [ Clement Lefebvre ]
+  * Add support for 19.2
+
+  [ Stephen Collins ]
+  * mint-build: add options for prs, temp files, and copying debs (#17)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sun, 30 Jun 2019 16:08:46 +0200
+
 mint-dev-tools (1.2.2) tessa; urgency=medium
 
   * cinnamon-stats-tracker: Flush when writing to file

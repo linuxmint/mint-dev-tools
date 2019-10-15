@@ -77,7 +77,7 @@ class Report(InfoReport):
         os.system("mkdir -p .tmp")
         os.system("rm -rf .tmp/*")
 
-        mint_couples = ['tina=bionic', 'sylvia=xenial']
+        mint_couples = ['tricia=bionic', 'sylvia=xenial']
         for couple in mint_couples:
             (mint, ubuntu) = couple.split("=")
             mint = Release(mint)

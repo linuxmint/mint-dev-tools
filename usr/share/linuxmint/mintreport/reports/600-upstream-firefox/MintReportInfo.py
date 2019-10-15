@@ -46,7 +46,7 @@ class Report(InfoReport):
         os.system("rm -rf .info-report/*")
 
         # Find the Mint versions
-        mint_version_str = find_mint_version("tina", "firefox")
+        mint_version_str = find_mint_version("tricia", "firefox")
         mint_version = mint_version_str.split("+")[0]
         mint_esr_str = find_mint_version("cindy", "firefox")
         mint_esr = mint_esr_str.split("~")[0]

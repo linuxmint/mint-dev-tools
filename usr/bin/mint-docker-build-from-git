@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-archs = ["i386", "amd64"]
+archs = ["amd64", "i386"]
 
 suffixes = {}
 suffixes["lmde2"] = "betsy"
@@ -99,7 +99,9 @@ for dir_name in os.listdir("."):
         name = dir_name.replace("linuxmintd_", "")
         (distribution, arch) = name.split("-")
         if arch == "amd64":
-            os.system("mv %s %s" % (dir_name, distribution))
+            os.system("mkdir -p %s" % distribution)
+            os.system("mv %s/* %s/" % (dir_name, distribution))
+            os.system("rmdir %s" % dir_name)
         else:
             os.system("mkdir -p %s" % distribution)
             os.system("mv %s %s/i386" % (dir_name, distribution))

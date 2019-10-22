@@ -78,6 +78,7 @@ class Report(InfoReport):
         os.system("rm -rf .tmp/*")
 
         mint_couples = ['tricia=bionic', 'sylvia=xenial']
+        is_pertinent = False
         for couple in mint_couples:
             (mint, ubuntu) = couple.split("=")
             mint = Release(mint)
@@ -93,9 +94,9 @@ class Report(InfoReport):
                             self.dismissable_pkg_release = ubuntu.name
                             self.descriptions.append("%s %s (in %s) is pinned by %s (in %s)" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name, mint_pkg.version, mint.name))
                             self.actions.append(InfoReportAction(label="Dismiss %s %s (%s)" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name), callback=self.dismiss))
-                            return True
+                            is_pertinent = True
 
-        return False
+        return is_pertinent
 
     def get_descriptions(self):
         # Return the descriptions

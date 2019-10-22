@@ -88,14 +88,10 @@ class Report(InfoReport):
             for mint_pkg in mint.packages:
                 for ubuntu_pkg in ubuntu.packages:
                     if ubuntu_pkg.name == mint_pkg.name:
-                        if ("%s=%s=%s" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name)) not in dismissed_pins:
-                            self.dismissable_pkg_name = ubuntu_pkg.name
-                            self.dismissable_pkg_version = ubuntu_pkg.version
-                            self.dismissable_pkg_release = ubuntu.name
-                            self.descriptions.append("%s %s (in %s) is pinned by %s (in %s)" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name, mint_pkg.version, mint.name))
-                            self.actions.append(InfoReportAction(label="Dismiss %s %s (%s)" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name), callback=self.dismiss))
+                        data = "%s=%s=%s" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name)
+                        if data not in dismissed_pins:
+                            self.actions.append(InfoReportAction(label="Dismiss %s %s (%s)" % (ubuntu_pkg.name, ubuntu_pkg.version, ubuntu.name), callback=self.dismiss, data=data))
                             is_pertinent = True
-
         return is_pertinent
 
     def get_descriptions(self):
@@ -106,13 +102,14 @@ class Report(InfoReport):
         # Return available actions
         return self.actions
 
-    def dismiss(self):
+    def dismiss(self, data):
+        (dismissable_pkg_name, dismissable_pkg_version, dismissable_pkg_release) = data.split("=")
         dismissed_pins = self.settings.get_strv("dismissed-pins")
         for pin in dismissed_pins:
             (pkg, version, release) = pin.split("=")
-            if pkg == self.dismissable_pkg_name and release == self.dismissable_pkg_release:
+            if pkg == dismissable_pkg_name and release == dismissable_pkg_release:
                 dismissed_pins.remove(pin)
-        dismissed_pins.append("%s=%s=%s" % (self.dismissable_pkg_name, self.dismissable_pkg_version, self.dismissable_pkg_release))
+        dismissed_pins.append(data)
         dismissed_pins.sort()
         self.settings.set_strv("dismissed-pins", dismissed_pins)
         # reload

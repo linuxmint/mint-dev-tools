@@ -5,6 +5,7 @@ archs = ["i386", "amd64"]
 suffixes = {}
 suffixes["lmde2"] = "betsy"
 suffixes["lmde3"] = "cindy"
+suffixes["lmde4"] = "debbie"
 suffixes["mint19"] = "tara"
 suffixes["mint19.1"] = "tessa"
 suffixes["mint19.2"] = "tina"

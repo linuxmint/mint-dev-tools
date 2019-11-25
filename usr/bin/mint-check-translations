@@ -31,6 +31,7 @@ BAD_MISCOUNT = 1
 BAD_MISMATCH = 2
 BAD_UNESCAPED_QUOTE = 3
 BAD_EXCLUSIONS = 80
+BAD_NO_NBSP_ALLOWED = 90
 BAD_MISCOUNT_MAYBE_DATE = 99
 BAD_MISMATCH_MAYBE_DATE = 100
 RST_SCHAR_MISMATCH = 200
@@ -157,7 +158,9 @@ class Main:
         elif status == BAD_UNESCAPED_QUOTE:
             return "Bad quotes"
         elif status == RST_SCHAR_MISMATCH:
-            return "Mistmatch in RST special chars"
+            return "Mismatch in RST special chars"
+        elif status == BAD_NO_NBSP_ALLOWED:
+            return "%nbsp is not allowed, use a simple space instead"
         else:
             return ""
 
@@ -321,6 +324,9 @@ class Main:
             if keyword in msgid:
                 # Ignore percentages
                 return GOOD
+
+        if "&nbsp" in msgstr:
+            return BAD_NO_NBSP_ALLOWED
 
         if msgstr != "":
             if (is_plural and not is_python):

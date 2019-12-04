@@ -1,3 +1,13 @@
+mint-dev-tools (1.2.5) tricia; urgency=medium
+
+  [ Michael Webster ]
+  * mint-check-translations: Look for and flag occurrences of '&nbsp'.
+
+  [ Clement Lefebvre ]
+  * Add 19.3 BETA manifests
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 04 Dec 2019 10:38:20 +0000
+
 mint-dev-tools (1.2.4) tricia; urgency=medium
 
   * Add a mintreport report to detect new upstream versions of Firefox

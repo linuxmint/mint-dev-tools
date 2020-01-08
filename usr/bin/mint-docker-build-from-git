@@ -70,7 +70,7 @@ for distribution in distributions:
             if "://" in repository or "@" in repository:
                 project_name = repository.split("/")[-1].replace(".git", "")
             commands.append(mintbuild)
-            commands.append("cp %s/*_* /volume_out"  % project_name)
+            commands.append("cp %s/*_* /volume_out || cp %s/%s/*_* /volume_out"  % (project_name, project_name, project_name))
 
         # Create the output directory
         output_directory = os.path.join(os.getcwd(), "docker-output", docker_image.replace("/", "_"))

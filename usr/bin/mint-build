@@ -122,7 +122,15 @@ if os.path.exists('debian'):
     if deb_dir is not None:
         copy_debs(deb_dir)
 else:
-    for subdirectory in os.listdir("."):
+    subdirectories = sorted(os.listdir("."))
+    if os.path.exists('build-order'):
+        subdirectories = []
+        with open('build-order') as f:
+            for subdirectory in f.readlines():
+                subdirectory = subdirectory.strip()
+                if not subdirectory.startswith("#"):
+                    subdirectories.append(subdirectory)
+    for subdirectory in subdirectories:
         if os.path.isdir(subdirectory) and os.path.exists(os.path.join(subdirectory, "debian")):
             os.chdir(subdirectory)
             build(args.suffix)

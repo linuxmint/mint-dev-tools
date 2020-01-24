@@ -1,8 +1,9 @@
 #!/usr/bin/python2
 # coding=utf-8
 import argparse
-import polib
 import sys
+sys.path.insert(1, '/usr/lib/python3/dist-packages')
+import polib
 import os
 import subprocess
 import threading

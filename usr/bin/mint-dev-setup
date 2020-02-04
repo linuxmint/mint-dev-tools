@@ -45,14 +45,55 @@ while not os.path.exists("%s/.gitconfig" % USER_HOME):
     os.system("git config --global user.email \"%s\"" % git_email)
 
 ## Configure SSH
-while not os.path.exists("%s/.ssh/id_rsa.pub" % USER_HOME):
+choice = "0"
+while choice not in ("", "1", "2"):
+    print("")
+    print("Configuring SSH. What do you want to do?")
+    print("\t1) Create new SSH key pair (default)")
+    print("\t2) Use an existing SSH key pair")
+    choice = input("Select an option [1-2]: ")
+
+if choice == "":
+    choice = "1"
+choice = int(choice)
+
+pubkey_path = ""
+if choice == 1:
     print("")
     print(" === CREATING AN SSH KEY (keep pressing enter for default choices) ===")
+    print("     Please, create the key pair in your ~/.ssh folder")
+    # Create ~/.ssh folder:
+    os.makedirs("%s/.ssh" % USER_HOME, exist_ok=True)
+    
+    files_list_before = set(os.listdir("%s/.ssh" % USER_HOME))
+    # Try to create key until success:
     os.system("ssh-keygen")
+    files_list_after = set(os.listdir("%s/.ssh" % USER_HOME))
+
+    # Sorted list of just created files:
+    new_files = sorted(files_list_after - files_list_before)
+    print(new_files)
+    
     print("")
-    print("This is your public SSH key, you should now login to your Github account and add that key:")
-    print("")
-    os.system("cat ~/.ssh/id_rsa.pub")
+    if(len(new_files) != 2) or (new_files[1] != new_files[0] + '.pub'):
+        print("Sorry, I couldn't automatically detect the file")
+    else:
+        pubkey_path = "%s/.ssh/%s" % (USER_HOME, new_files[1])
+
+while not os.path.exists(pubkey_path):
+    pubkey_path = input("Please, enter your public key's path: ")
+    if pubkey_path != "":
+        if not pubkey_path.endswith(".pub"):
+            pubkey_path += ".pub"
+        pubkey_path = os.path.join(USER_HOME, pubkey_path)
+
+    if not os.path.exists(pubkey_path):
+        print("Error: the file does not exist")
+
+print("")
+print("This is your public SSH key, you should now login to your Github account and add that key:")
+print("")
+os.system("cat %s" % pubkey_path)
 
 print("")
 print(" === REFRESHING APT CACHE ===")

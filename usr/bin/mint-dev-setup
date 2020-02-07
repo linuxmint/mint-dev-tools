@@ -80,15 +80,31 @@ if choice == 1:
     else:
         pubkey_path = "%s/.ssh/%s" % (USER_HOME, new_files[1])
 
-while not os.path.exists(pubkey_path):
-    pubkey_path = input("Please, enter your public key's path: ")
+while not os.path.isfile(pubkey_path):
+    default_path = ""
+    if os.path.isfile("%s/.ssh/id_rsa.pub" % USER_HOME):
+        default_path = "%s/.ssh/id_rsa.pub" % USER_HOME
+    elif os.path.isdir("%s/.ssh" % USER_HOME):
+        cur_files = os.listdir("%s/.ssh" % USER_HOME)
+        cur_files = list(filter(lambda s: s.endswith('.pub'), cur_files))
+        if len(cur_files) == 1:
+            default_path = os.path.join(".ssh", cur_files[0])
+
+    print("Please, enter your public key's path", end="")
+    if default_path != "":
+        print(" [%s]" % default_path, end="")
+    print(": ", end="")
+
+    pubkey_path = input()
+    if pubkey_path == "":
+        pubkey_path = default_path
     if pubkey_path != "":
         if not pubkey_path.endswith(".pub"):
             pubkey_path += ".pub"
         pubkey_path = os.path.join(USER_HOME, pubkey_path)
 
-    if not os.path.exists(pubkey_path):
-        print("Error: the file does not exist")
+    if not os.path.isfile(pubkey_path):
+        print("Error: path doesn't exist or not a file")
 
 print("")
 print("This is your public SSH key, you should now login to your Github account and add that key:")

@@ -1,3 +1,24 @@
+mint-dev-tools (1.2.6) ulyana; urgency=medium
+
+  [ Clement Lefebvre ]
+  * mint-check-translations: Forbid weird characters
+  * mint-docker-build-from-git: Fix nemo-extensions build
+  * mint-docker-build-from-git: Add support for Mint 18
+  * mint-build: Use a build-order file if provided
+
+  [ erwn16 ]
+  * mint-check-translations: polib.py not found
+
+  [ Nikolay Nechaev ]
+  * mint-dev-setup ssh key generation update
+  * mint-dev-setup looking for default ssh key, when using an existing one
+
+  [ Clement Lefebvre ]
+  * Add manifests for 20.04 daily
+  * Remove gdebi-core from dependencies
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 01 Apr 2020 20:20:01 +0100
+
 mint-dev-tools (1.2.5) tricia; urgency=medium
 
   [ Michael Webster ]

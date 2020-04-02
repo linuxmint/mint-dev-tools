@@ -10,6 +10,7 @@ suffixes["mint19"] = "tara"
 suffixes["mint19.1"] = "tessa"
 suffixes["mint19.2"] = "tina"
 suffixes["mint19.3"] = "tricia"
+suffixes["mint20"] = "ulyana"
 
 import sys
 import os

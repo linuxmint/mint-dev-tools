@@ -12,6 +12,9 @@ suffixes["mint19.2"] = "tina"
 suffixes["mint19.3"] = "tricia"
 suffixes["mint20"] = "ulyana"
 
+# Releases which only support 64-bit
+only_64bit_releases = ["mint20"]
+
 import sys
 import os
 import argparse
@@ -41,6 +44,8 @@ if args.git_repositories is not None:
     for repository in repositories:
         for distribution in distributions:
             for arch in archs:
+                if arch == "i386" and distribution in only_64bit_releases:
+                    continue
                 docker_image = "linuxmintd/%s-%s" % (distribution, arch)
                 cmd = "mint-docker-build -i %s" % docker_image
                 if not args.without_suffix:
@@ -49,6 +54,8 @@ if args.git_repositories is not None:
 else:
     for distribution in distributions:
         for arch in archs:
+            if arch == "i386" and distribution in only_64bit_releases:
+                continue
             docker_image = "linuxmintd/%s-%s" % (distribution, arch)
             cmd = "mint-docker-build -i %s" % docker_image
             if not args.without_suffix:

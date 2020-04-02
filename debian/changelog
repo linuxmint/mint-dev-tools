@@ -1,3 +1,10 @@
+mint-dev-tools (1.2.7) ulyana; urgency=medium
+
+  * Add support for Mint 20
+  * Don't build for 32-bit in Mint 20
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 02 Apr 2020 12:31:19 +0100
+
 mint-dev-tools (1.2.6) ulyana; urgency=medium
 
   [ Clement Lefebvre ]

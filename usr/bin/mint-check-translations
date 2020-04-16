@@ -25,7 +25,7 @@ DATE_THRESHOLD = 2
 
 FORBIDDEN_CHARACTERS = ["&nbsp", "￼"]
 
-MO_EXT = ".mo"
+MO_EXTS = (".mo", ".gmo")
 PO_EXT = ".po"
 
 GOOD = 0
@@ -106,7 +106,7 @@ class Main:
         self.args = parser.parse_args()
 
         if self.args.mo:
-            self.type = MO_EXT
+            self.type = MO_EXTS
         else:
             self.type = PO_EXT
 
@@ -188,7 +188,7 @@ class Main:
         num_files = 0
         for root, subFolders, files in os.walk(self.args.directory, topdown=False):
             for file in files:
-                if self.type == MO_EXT and file.endswith(MO_EXT):
+                if self.type == MO_EXTS and file.endswith(MO_EXTS):
                     num_files += 1
                 elif file.endswith(PO_EXT):
                     num_files += 1
@@ -196,7 +196,7 @@ class Main:
         count_files = 0
         for root, subFolders, files in os.walk(self.args.directory, topdown=False):
             for file in files:
-                if self.type == MO_EXT and file.endswith(MO_EXT):
+                if self.type == MO_EXTS and file.endswith(MO_EXTS):
                     path, junk = os.path.split(root)
                     path, locale = os.path.split(path)
                     mo_inst = polib.mofile(os.path.join(root, file))
@@ -263,7 +263,7 @@ class Main:
                     if idx > 1 and msgid[idx-1] == " " and msgid[idx-2] in DIGITS:
                         # ignore this token, it's probably a percentage
                         continue
-                    if msgid[idx-1] > -1 and msgid[idx-1] != "\\":
+                    if idx > -1 and msgid[idx-1] != "\\":
                         subidx = 0
                         if msgid[idx+1] == "(":
                             while msgid[idx+1+subidx] != ")":
@@ -286,7 +286,7 @@ class Main:
                                 except IndexError:
                                     break
             except Exception as e:
-                print(e)
+                print("Error parsing msgid at index %d: %s" % (idx, e))
 
         for idx in range(len(msgstr)):
             try:
@@ -297,7 +297,7 @@ class Main:
                     if idx > 1 and msgstr[idx-1] == " " and msgstr[idx-2] in DIGITS:
                         # ignore this token, it's probably a percentage
                         continue
-                    if msgstr[idx-1] > -1 and msgstr[idx-1] != "\\":
+                    if idx > -1 and msgstr[idx-1] != "\\":
                         subidx = 0
                         if msgstr[idx+1] == "(":
                             while msgstr[idx+1+subidx] != ")":
@@ -320,7 +320,7 @@ class Main:
                                 except IndexError:
                                     break
             except Exception as e:
-                print(e)
+                print("Error parsing msgstr at index %d: %s" % (idx, e))
 
         for keyword in ["5%", "0%"]:
             if keyword in msgid:
@@ -328,7 +328,7 @@ class Main:
                 return GOOD
 
         for character in FORBIDDEN_CHARACTERS:
-            if character.decode("utf-8") in msgstr:
+            if character in msgstr:
                 return BAD_CHARACTER
 
         if msgstr != "":
@@ -339,7 +339,7 @@ class Main:
                 if id_date_count >= DATE_THRESHOLD or str_date_count >= DATE_THRESHOLD:
                     return BAD_MISCOUNT_MAYBE_DATE
                 else:
-                    #print ("Miscount: %s -- %s" % (id_tokens, str_tokens))
+                    # print ("Miscount: %s -- %s" % (id_tokens, str_tokens))
                     return BAD_MISCOUNT
             else:
                 mismatch = False

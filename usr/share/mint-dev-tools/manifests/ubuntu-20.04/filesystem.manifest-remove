@@ -7,6 +7,7 @@ cryptsetup
 cryptsetup-bin
 cryptsetup-initramfs
 cryptsetup-run
+dctrl-tools
 dmeventd
 dmraid
 dpkg-repack
@@ -21,7 +22,6 @@ firefox-locale-ru
 firefox-locale-zh-hans
 fonts-arphic-ukai
 fonts-arphic-uming
-gawk
 gir1.2-timezonemap-1.0
 gir1.2-xkl-1.0:amd64
 gnome-getting-started-docs-de
@@ -117,7 +117,6 @@ libchewing3-data
 libdebian-installer4:amd64
 libdevmapper-event1.02.1:amd64
 libdmraid1.0.0.rc16
-libgpg-error-l10n
 libhangul-data
 libhangul1:amd64
 liblvm2cmd2.03:amd64
@@ -150,7 +149,6 @@ libreoffice-l10n-pt-br
 libreoffice-l10n-ru
 libreoffice-l10n-zh-cn
 libreoffice-l10n-zh-tw
-libsigsegv2:amd64
 libtimezonemap-data
 libtimezonemap1:amd64
 libuutil1linux
@@ -200,7 +198,6 @@ ubiquity-casper
 ubiquity-frontend-gtk
 ubiquity-slideshow-ubuntu
 ubiquity-ubuntu-artwork
-update-motd
 user-setup
 wbrazilian
 wbritish

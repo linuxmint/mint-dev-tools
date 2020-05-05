@@ -1,3 +1,10 @@
+mint-dev-tools (1.2.8) ulyana; urgency=medium
+
+  * Add 20.04 manifest
+  * Remove pinned packages and FF reports
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 05 May 2020 17:55:45 +0100
+
 mint-dev-tools (1.2.7) ulyana; urgency=medium
 
   * Add support for Mint 20

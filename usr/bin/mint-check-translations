@@ -43,7 +43,7 @@ UNSUPPORTED_LOCALES = ["yi"]
 (COL_MO, COL_NUMBER, COL_PROJECT, COL_LANGUAGE, COL_MSGID, COL_MSGSTR, COL_ISSUE) = range(7)
 
 # Used as a decorator to run things in the background
-def async(func):
+def _async(func):
     def wrapper(*args, **kwargs):
         thread = threading.Thread(target=func, args=args, kwargs=kwargs)
         thread.daemon = True
@@ -183,7 +183,7 @@ class Main:
         fraction = float(count) / float(total)
         self.progressbar.set_fraction(fraction)
 
-    @async
+    @_async
     def load_files(self):
         num_files = 0
         for root, subFolders, files in os.walk(self.args.directory, topdown=False):

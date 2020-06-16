@@ -7,6 +7,7 @@ import os
 import subprocess
 import threading
 import time
+import cgi
 import urllib
 import gi
 gi.require_version('Gtk', '3.0')
@@ -23,7 +24,15 @@ COMMON_I_TOKENS = ["i", "li", "I"]
 COMMON_U_TOKENS = ["%'u", "%u", "%Iu", "%I"]
 DATE_THRESHOLD = 2
 
-FORBIDDEN_CHARACTERS = ["&nbsp", "￼"]
+# Lots of false negatives..
+if False:
+    MARKUP_CHARACTERS = ["<", ">"]
+else:
+    MARKUP_CHARACTERS = []
+
+FORBIDDEN_CHARACTERS = ["&nbsp", "[nbsp]", "&nnbsp",
+                        "[nnbsp]", "&zwj", "[zwj]",
+                        "&zwnj", "[zwnj]" "￼", " "]
 
 MO_EXTS = (".mo", ".gmo")
 PO_EXT = ".po"
@@ -34,6 +43,7 @@ BAD_MISMATCH = 2
 BAD_UNESCAPED_QUOTE = 3
 BAD_EXCLUSIONS = 80
 BAD_CHARACTER = 90
+BAD_MAYBE_MARKUP_CHAR = 95
 BAD_MISCOUNT_MAYBE_DATE = 99
 BAD_MISMATCH_MAYBE_DATE = 100
 RST_SCHAR_MISMATCH = 200
@@ -163,6 +173,8 @@ class Main:
             return "Mismatch in RST special chars"
         elif status == BAD_CHARACTER:
             return "Bad character or %nbsp"
+        elif status == BAD_MAYBE_MARKUP_CHAR:
+            return GLib.markup_escape_text("Possible markup character (<, >) in msgstr but not msgid")
         else:
             return ""
 
@@ -330,6 +342,10 @@ class Main:
         for character in FORBIDDEN_CHARACTERS:
             if character in msgstr:
                 return BAD_CHARACTER
+
+        for character in MARKUP_CHARACTERS:
+            if (character in msgstr) and (character not in msgid):
+                return BAD_MAYBE_MARKUP_CHAR
 
         if msgstr != "":
             if (is_plural and not is_python):

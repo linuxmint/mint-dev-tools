@@ -140,14 +140,14 @@ parser.add_argument('-d', '--derivable', dest='derivable', action='store_true',
                     help='if given, the class type will be derivable, otherwise it will be final')
 parser.add_argument('prefix', help='The class prefix. It should be camel case with underscores between words')
 parser.add_argument('class_name', help='The class name. It should be camel case with underscores between words')
-parser.add_argument('parent_class', help='The parent class. It should be upper case with underscores between words')
+parser.add_argument('parent_class_type', help='The parent class type. It should be in the form PREFIX_TYPE_CLASSNAME')
 parser.add_argument('path', help='The path to where the files should be created')
 
 args = parser.parse_args()
 
 # prefix = sys.argv[1]
 # class_name = sys.argv[2]
-# parent_class = sys.argv[3]
+# parent_class_type = sys.argv[3]
 # path = os.path.abspath(sys.argv[4])
 
 def strip(string):
@@ -168,8 +168,8 @@ def hyphen(string):
     return string.replace('_', '-').lower()
 
 replacements = [
-    ('<ParentClass>', untype(args.parent_class)),
-    ('<PARENT_TYPE_CLASS>', args.parent_class),
+    ('<ParentClass>', untype(args.parent_class_type)),
+    ('<PARENT_TYPE_CLASS>', args.parent_class_type),
     ('<prefix>', args.prefix.lower()),
     ('<Prefix>', strip(args.prefix)),
     ('<PREFIX>', args.prefix.upper()),

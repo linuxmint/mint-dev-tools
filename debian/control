@@ -17,6 +17,6 @@ Depends: python3 (>= 3.3),
          ${misc:Depends},
          equivs,
          devscripts
-Recommends: gitk, gitg, git-buildpackage, meld, sublime-text, devhelp, glade, regexxer, pyrenamer, d-feet, gdb, awf, gconf-editor, dconf-editor, gnome-dbg, devscripts
+Recommends: gitk, gitg, git-buildpackage, meld, sublime-text, devhelp, glade, regexxer, pyrenamer, d-feet, gdb, awf, gconf-editor, dconf-editor, gnome-dbg, devscripts, gnome-api-docs
 Description: A collection of tools to develop/compile Linux Mint projects
  All you need to develop/compile Linux Mint projects.

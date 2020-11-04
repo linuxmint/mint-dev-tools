@@ -101,23 +101,23 @@ class Report(InfoReport):
         # Return available actions
         return self.actions
 
-    def dismiss_chromium_beta(self):
+    def dismiss_chromium_beta(self, data):
         dismissed_releases = self.settings.get_strv("dismissed-releases")
         for release in dismissed_releases:
             if release.startswith("chromium-beta="):
                 dismissed_releases.remove(release)
-        dismissed_releases.append("chromium-beta=%s" % self.self.beta_version_str)
+        dismissed_releases.append("chromium-beta=%s" % self.beta_version_str)
         dismissed_releases.sort()
         self.settings.set_strv("dismissed-releases", dismissed_releases)
         # don't reload
         return True
 
-    def dismiss_chromium_release(self):
+    def dismiss_chromium_release(self, data):
         dismissed_releases = self.settings.get_strv("dismissed-releases")
         for release in dismissed_releases:
             if release.startswith("chromium-release="):
                 dismissed_releases.remove(release)
-        dismissed_releases.append("chromium-release=%s" % self.self.release_version_str)
+        dismissed_releases.append("chromium-release=%s" % self.release_version_str)
         dismissed_releases.sort()
         self.settings.set_strv("dismissed-releases", dismissed_releases)
         # don't reload

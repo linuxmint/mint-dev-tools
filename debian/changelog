@@ -1,3 +1,16 @@
+mint-dev-tools (1.3.0) ulyssa; urgency=medium
+
+  [ Michael Webster ]
+  * generate-gobject-class: Clarify parent class argument.
+  * Add gnome-api-docs to recommends.
+  * Add chromium update checker.
+  * chromium reporter: Fix a few issues with actions.
+
+  [ Clement Lefebvre ]
+  * Add support for ulyssa
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 25 Nov 2020 12:07:03 +0000
+
 mint-dev-tools (1.2.9) ulyana; urgency=medium
 
   [ Michael Webster ]

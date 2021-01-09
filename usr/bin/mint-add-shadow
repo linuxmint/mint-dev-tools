@@ -1,0 +1,4 @@
+#!/bin/bash
+
+shadow="$(dirname $1)/shadow_$(basename $1)"
+convert $1 -gravity 'northwest' -background 'rgba(255,255,255,0)' -splice '10x10' \( +clone -background '#5F5F5FFF' -shadow '80x3-1-1' \) +swap -background none -mosaic +repage \( +clone -background '#5F5F5FFF' -shadow '80x3+5+5' \) +swap -background none -mosaic +repage $shadow

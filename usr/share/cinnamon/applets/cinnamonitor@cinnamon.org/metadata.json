@@ -1,0 +1,8 @@
+{
+    "description": "Monitors memory usage of cinnamon process, and GJS stuff once I figure it out", 
+    "max-instances": "10", 
+    "dangerous": true, 
+    "uuid": "cinnamonitor@cinnamon.org", 
+    "name": "Cinnamon Process and GJS Memory Monitor", 
+    "icon": "utilities-system-monitor"
+}

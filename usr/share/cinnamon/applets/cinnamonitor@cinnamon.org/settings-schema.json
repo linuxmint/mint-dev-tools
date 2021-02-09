@@ -1,0 +1,8 @@
+{
+ "process-name" : {
+    "type" : "entry",
+    "default" : "",
+    "description" : "Process name to monitor (if not found the Cinnamon process is used):",
+    "tooltip" : "Set the name of the process you want to monitor here.  Note, for now, no consideration is taken for multiple instances of the same program.  Undefined behavior."
+ }
+}

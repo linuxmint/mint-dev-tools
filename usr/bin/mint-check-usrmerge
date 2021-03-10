@@ -82,12 +82,13 @@ class MergeChecker():
         found_matches = []
         output = subprocess.getoutput("egrep -iwr %s %s" % (merged_dir, DEB_CONTENT_PATH))
         for line in output.split("\n"):
-            line = line.strip()
-            if merged_dir in line:
-                matches = get_paths(line)[1:]
-                for match in matches:
-                    if merged_dir in match and match not in found_matches:
-                        found_matches.append(match)
+            if ":" in line:
+                line = line.strip().split(":")[1]
+                if (not line.startswith("#")) and merged_dir in line:
+                    matches = get_paths(line)
+                    for match in matches:
+                        if merged_dir in match and match not in found_matches:
+                            found_matches.append(match)
         for match in found_matches:
             if match in self.merged_paths:
                 print("  OK: %s" % match)

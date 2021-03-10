@@ -1,0 +1,112 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import subprocess
+import re
+
+TMP_PATH = "/tmp/mint-check-usrmerge"
+DEB_PATH = TMP_PATH + "/package.deb"
+DEB_CONTENT_PATH = TMP_PATH + "/deb"
+
+def get_paths(s, sep=os.sep):
+    return [x for x in re.split(r'[` \=~!@#$%^&*()+\[\]{};\'\\:"|<,<>?]', s) if len(x.split(sep)) > 1]
+
+class MergeChecker():
+
+    def __init__(self):
+        self.merged_dirs = ["bin", "sbin", "lib", "lib32", "libx32", "lib64"]
+        self.ubuntu_release = "focal"
+        self.mint_release = "ulyssa"
+        self.merged_paths = [] # existing paths..
+        self.merged_binaries = [] # names of binaries
+        self.packages_per_binary = {}
+        self.errors = []
+        os.system("rm -rf %s" % TMP_PATH)
+        os.system("mkdir -p %s" % TMP_PATH)
+
+    def get_ubuntu_filelist(self):
+        url = "http://archive.ubuntu.com/ubuntu/dists/%s/Contents-amd64.gz" % self.ubuntu_release
+        # Get the list of merged content in Ubuntu
+        print("Downloading content from Ubuntu repositories...")
+        os.system("wget -O %s/contents.gz %s 2> /dev/null" % (TMP_PATH, url))
+        print("Extracting content from Ubuntu repositories...")
+        os.system("gzip -d %s/contents.gz" % TMP_PATH)
+        print("Analyzing content from Ubuntu repositories...")
+        with open("%s/contents" % TMP_PATH) as content_file:
+            for line in content_file:
+                line = line.strip()
+                for merged_dir in self.merged_dirs:
+                    for directory in [merged_dir, "usr/" + merged_dir]:
+                        if line.startswith(directory):
+                            elements = line.split()
+                            path = "/" + elements[0]
+                            package = elements[-1].split("/")[-1]
+                            self.merged_paths.append(path)
+                            binary = path.split("/")[-1]
+                            self.merged_binaries.append(binary)
+                            self.packages_per_binary[binary] = package
+
+    def get_list_of_mint_package_urls(self):
+        # Get the list of debs in Mint upstream component
+        url = "http://packages.linuxmint.com/dists/%s/upstream/binary-amd64/Packages.gz" % self.mint_release
+        print("Downloading list of Mint packages...")
+        os.system("rm -f %s/packages.gz; wget -O %s/packages.gz %s 2> /dev/null" % (TMP_PATH, TMP_PATH, url))
+        print("Extracting list of Mint packages...")
+        os.system("rm -f %s/packages; gzip -d %s/packages.gz" % (TMP_PATH, TMP_PATH))
+        deb_urls = []
+        with open("%s/packages" % TMP_PATH) as content_file:
+            for line in content_file:
+                line = line.strip()
+                if line.startswith("Filename: "):
+                    deb_urls.append(line.replace("Filename: ", ""))
+        return deb_urls
+
+    def check_mint_package(self, url):
+        # Check packages one by one
+        os.system("rm -rf %s" % DEB_CONTENT_PATH)
+        os.system("mkdir -p %s" % DEB_CONTENT_PATH)
+        pkg_name = url.split("/")[-1].split("_")[0]
+        print("\nChecking %s..." % pkg_name)
+        url = "http://packages.linuxmint.com/%s" % url
+        os.system("rm -f %s; wget -O %s %s 2> /dev/null" % (DEB_PATH, DEB_PATH, url))
+        os.system("dpkg-deb -x %s %s" % (DEB_PATH, DEB_CONTENT_PATH))
+        found_matches = []
+        for merged_dir in self.merged_dirs:
+            usr_dir = "/usr/" + merged_dir
+            merged_dir = "/" + merged_dir
+            self.check_dir(pkg_name, merged_dir, usr_dir)
+            self.check_dir(pkg_name, usr_dir, merged_dir)
+
+    def check_dir(self, pkg_name, merged_dir, alternative_dir):
+        found_matches = []
+        output = subprocess.getoutput("egrep -iwr %s %s" % (merged_dir, DEB_CONTENT_PATH))
+        for line in output.split("\n"):
+            line = line.strip()
+            if merged_dir in line:
+                matches = get_paths(line)[1:]
+                for match in matches:
+                    if merged_dir in match and match not in found_matches:
+                        found_matches.append(match)
+        for match in found_matches:
+            if match in self.merged_paths:
+                print("  OK: %s" % match)
+            else:
+                alternative_path = match.replace(merged_dir, alternative_dir)
+                if alternative_path in self.merged_paths:
+                    binary = match.split("/")[-1]
+                    if binary in self.merged_binaries:
+                        error = "%s: %s should be %s (provided by %s)" % (pkg_name, match, alternative_path, self.packages_per_binary[binary])
+                        print("  ERROR: %s!!!" % error)
+                        self.errors.append(error)
+
+checker = MergeChecker()
+checker.get_ubuntu_filelist()
+urls = checker.get_list_of_mint_package_urls()
+for url in sorted(urls):
+    checker.check_mint_package(url)
+
+if len(checker.errors) > 0:
+    print("\nThere have been errors!!")
+    for error in checker.errors:
+        print("  " + error)

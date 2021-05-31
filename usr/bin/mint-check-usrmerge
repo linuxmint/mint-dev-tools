@@ -17,7 +17,7 @@ class MergeChecker():
     def __init__(self):
         self.merged_dirs = ["bin", "sbin", "lib", "lib32", "libx32", "lib64"]
         self.ubuntu_release = "focal"
-        self.mint_release = "ulyssa"
+        self.mint_release = "uma"
         self.merged_paths = [] # existing paths..
         self.merged_binaries = [] # names of binaries
         self.packages_per_binary = {}

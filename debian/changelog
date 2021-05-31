@@ -1,3 +1,9 @@
+mint-dev-tools (1.3.2) uma; urgency=medium
+
+  * Add 20.2 to list of 64-bit only releases
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 31 May 2021 15:13:27 +0100
+
 mint-dev-tools (1.3.1) uma; urgency=medium
 
   * Don't build i386 for mint20.1

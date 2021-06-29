@@ -1,3 +1,5 @@
 #!/bin/bash
-
+echo Hint: the \'definitely lost\' entries are most associated with leaks in gobject programs.
+echo More info: https://developer.gnome.org/programming-guidelines/stable/tooling.html.en#valgrind
+echo 
 G_SLICE=always-malloc G_DEBUG=resident-modules valgrind --tool=memcheck --leak-check=full --leak-resolution=high --num-callers=20 --log-file=vgdump $@

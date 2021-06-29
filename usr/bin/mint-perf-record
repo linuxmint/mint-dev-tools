@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# You'll need to install a few kernel-specific packages to use this.
+
+sudo sh -c "echo 1 >/proc/sys/kernel/perf_event_paranoid" && sudo sh -c " echo 0 > /proc/sys/kernel/kptr_restrict"
+
+perf record -e cycles -F 50 -g --call-graph dwarf -- $@

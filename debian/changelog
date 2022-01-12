@@ -1,3 +1,13 @@
+mint-dev-tools (1.3.5) una; urgency=medium
+
+  [ Michael Webster ]
+  * Add bak/unbak.
+
+  [ Clement Lefebvre ]
+  * Add support for LMDE 5 Elsie
+
+ -- Clement Lefebvre <root@linuxmint.com>  Wed, 12 Jan 2022 17:01:47 +0000
+
 mint-dev-tools (1.3.4) una; urgency=medium
 
   * Add support for Mint 20.3 Una

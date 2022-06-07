@@ -1,0 +1,108 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import subprocess
+
+class Package:
+
+    def __init__(self, name, priority):
+        self.name = name
+        self.version = None
+        self.priority = priority
+
+class Release:
+
+    def __init__(self, name, base):
+        self.name = name
+        self.base = base
+        self.packages = {}
+
+def read_list(filename):
+    array = []
+    filehandle = open(filename)
+    for line in filehandle.readlines():
+        line = line.strip()
+        if line == "" or line.startswith("#"):
+            continue
+        array.append(line)
+    return array
+
+def version_is_older(version1, version2):
+    output = subprocess.getoutput("dpkg --compare-versions %s gt %s && echo 'OK'" % (version1, version2))
+    if (output == 'OK'):
+        return True
+    else:
+        return False
+
+def add_packages(release, url, priority):
+    os.system("mkdir -p .compare-releases")
+    os.system("rm -rf .compare-releases/*")
+    os.system("wget -O .compare-releases/sources.gz %s 2> /dev/null" % url)
+    os.system("gzip -d .compare-releases/sources.gz")
+    with open(".compare-releases/sources", 'r') as source_file:
+        package = None
+        for line in source_file:
+            line = line.strip()
+            if line.startswith("Package: "):
+                name = line.replace("Package: ", "")
+                package = Package(name, priority)
+            elif line.startswith("Version: "):
+                version = line.replace("Version: ", "")
+                package.version = version
+                if not package.name in release.packages.keys():
+                    # print("Add %s[%s]" % (package.name, package.version))
+                    release.packages[package.name] = package
+                else:
+                    old_package = release.packages[package.name]
+                    if version_is_older(package.version, old_package.version):
+                        # print("Add higher version for %s %s > %s" % (package.name, old_package.version, package.version))
+                        release.packages[package.name] = package
+                    elif package.priority > old_package.priority:
+                        # print("Add pin for %s %s > %s (%s > %s)" % (package.name, old_package.version, package.version, old_package.priority, package.priority))
+                        release.packages[package.name] = package
+                    # else:
+                    #     print("Keeping %s[%s] (against %s)" % (package.name, old_package.version, package.version))
+
+missing_packages = []
+lower_versions = []
+
+release1 = Release("una", "focal")
+release2 = Release("vanessa", "jammy")
+
+for release in [release1, release2]:
+    # print(release.name)
+    urls = []
+    for component in ["main", "restricted", "universe", "multiverse"]:
+        urls.append("http://archive.ubuntu.com/ubuntu/dists/%s/%s/source/Sources.gz" % (release.base, component))
+        urls.append("http://archive.ubuntu.com/ubuntu/dists/%s-updates/%s/source/Sources.gz" % (release.base, component))
+        urls.append("http://security.ubuntu.com/ubuntu/dists/%s-security/%s/source/Sources.gz" % (release.base, component))
+        urls.append("http://archive.ubuntu.com/ubuntu/dists/%s-backports/%s/source/Sources.gz" % (release.base, component))
+    for component in ["main", "import", "backport"]:
+        urls.append("http://packages.linuxmint.com/dists/%s/%s/source/Sources.gz" % (release.name, component))
+    for url in urls:
+        add_packages(release, url, 500)
+    add_packages(release, "http://packages.linuxmint.com/dists/%s/upstream/source/Sources.gz" % release.name, 700)
+
+for name in release1.packages.keys():
+    package1 = release1.packages[name]
+
+    # missing packages
+    if name not in release2.packages.keys():
+        missing_packages.append("    {0:30}: {1}".format(package1.name, package1.version))
+        continue
+
+    package2 = release2.packages[name]
+    if version_is_older(package1.version, package2.version):
+        lower_versions.append("    {0:30}: {1} < {2}".format(package1.name, package2.version, package1.version))
+
+print()
+print("Missing packages in %s" % release2.name)
+for line in sorted(missing_packages):
+    print(line)
+
+print()
+print("Lower versions in %s" % release2.name)
+for line in sorted(lower_versions):
+    print(line)
+print()

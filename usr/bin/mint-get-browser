@@ -1,0 +1,151 @@
+#!/usr/bin/python3
+
+import sys
+import os
+import argparse
+import lsb_release
+import platform
+import tempfile
+import requests
+import json
+from pkg_resources import parse_version
+
+from gi.repository import Gio, GLib
+
+def get_chromium_version():
+        url = requests.get("https://omahaproxy.appspot.com/all.json", timeout=30)
+        chromium_json = json.loads(url.text)
+        for platform in chromium_json:
+            if platform["os"] == "linux":
+                for version in platform["versions"]:
+                    if version["channel"] == "stable":
+                        return version["version"]
+        return None
+
+def get_firefox_version_json(which="stable"):
+    res = requests.get("https://product-details.mozilla.org/1.0/firefox.json", timeout=30)
+    firefox_json = json.loads(res.text)
+
+    mrv = parse_version("0")
+    mrr = ""
+
+    releases = firefox_json["releases"]
+    for release_name in releases.keys():
+        if which == "esr" and "esr" not in release_name:
+            continue
+        elif which != "esr" and "esr" in release_name:
+            continue
+        release = releases[release_name]
+        if which in ("stable", "esr"):
+            if release["category"] not in ("major", "stability"):
+                continue
+            if "b" in release["version"]:
+                continue
+            version = parse_version(release["version"])
+
+            if which == "esr" and version > parse_version("79.0.0"):
+                continue
+
+            if version > mrv:
+                mrv = version
+                mrr = release_name
+        elif which == "beta":
+            if release["category"] != "dev":
+                continue
+            if "b" not in release["version"]:
+                continue
+            version = parse_version(release["version"])
+            if version > mrv:
+                mrv = version
+                mrr = release_name
+    return mrr.replace("firefox-", "")
+
+latest_chromium_version = get_chromium_version()
+latest_firefox_version = get_firefox_version_json()
+
+print("\n")
+print("Current Firefox version is %s" % latest_firefox_version)
+print("Current Chromium version is %s" % latest_chromium_version)
+print("\n")
+
+parser = argparse.ArgumentParser(description="Download and install a browser for testing")
+parser.add_argument("-b", "--browser", type=str, help="Specify a browser", required=True)
+parser.add_argument("-v", "--version", type=str, help="Specify a version")
+args = parser.parse_args()
+
+if args.version == None:
+    if args.browser == "chromium":
+        version = latest_chromium_version
+    elif args.browser == "firefox":
+        version = latest_firefox_version
+else:
+    version = args.version
+
+IP = "135.181.5.124"
+
+firefox_mint_to_ubuntu = {
+    "vanessa" : "jammy",
+    "una" : "focal",
+    "uma" : "focal",
+    "tricia" : "bionic"
+}
+
+lmde = {
+    "elsie" : "lmde5",
+    "debbie" : "lmde4"
+}
+
+chromium_mint = {
+    "una" : "mint20",
+    "vanessa": "mint21"
+}
+
+try:
+    codename = lsb_release.get_os_release()["CODENAME"]
+except:
+    codename = lsb_release.get_lsb_information()["CODENAME"]
+
+arch_info = platform.architecture()
+
+if arch_info[0] == "64bit":
+    arch = "amd64"
+elif arch_info[0] == "32bit":
+    arch = "i386"
+
+if args.browser == "firefox":
+    if codename in firefox_mint_to_ubuntu.keys():
+        root_folder = "firefox-mint"
+        path_to_tar = os.path.join(root_folder, "firefox_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
+        tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
+        tarpath = os.path.join(path_to_tar, tarfile)
+    elif codename in lmde.keys():
+        root_folder = "firefox-lmde"
+        path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
+        tarfile = "bundle-%s~linuxmint1+%s_%s.tar" % (version, codename, arch)
+        tarpath = os.path.join(path_to_tar, tarfile)
+elif args.browser == "chromium":
+    root_folder = "chromium"
+    if codename in chromium_mint.keys():
+        path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_mint[codename], arch))
+        deb = os.path.join(path_to_debs, "chromium_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
+        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
+    elif codename in lmde.keys():
+        if arch == "i386":
+            root_folder = "chromium-lmde"
+        path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
+        deb = os.path.join(path_to_debs, "chromium_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
+        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
+
+with tempfile.TemporaryDirectory() as dirname:
+    if args.browser == "firefox":
+        os.system("wget -P %s %s" % (dirname, os.path.join(IP, tarpath)))
+        os.chdir(dirname)
+        os.system("tar xf %s" % tarfile)
+        os.system("sudo dpkg -i *.deb")
+    elif args.browser == "chromium":
+        os.system("wget -P %s %s" % (dirname, os.path.join(IP, deb)))
+        os.system("wget -P %s %s" % (dirname, os.path.join(IP, deb_dbg)))
+        os.chdir(dirname)
+        os.system("sudo dpkg -i *.deb")
+
+sys.exit(0)

@@ -4,9 +4,18 @@ import gi
 import apt
 gi.require_version("Gtk", "3.0")
 gi.require_version("XApp", "1.0")
-gi.require_version("PackageKitGlib", "1.0")
+
 from gi.repository import Gtk, Gio, XApp
+
+#pkit
+gi.require_version("PackageKitGlib", "1.0")
 from gi.repository import PackageKitGlib
+
+#aptd
+from aptdaemon import client
+from aptdaemon.enums import ERROR_UNKNOWN
+from aptdaemon.errors import NotAuthorizedError, TransactionFailed
+from aptdaemon.gtk3widgets import AptErrorDialog, AptProgressDialog
 
 class App():
     def __init__(self):
@@ -14,24 +23,51 @@ class App():
         self.builder.add_from_file("/usr/share/mint-dev-tools/mint-apt-backend-tester.ui")
         self.window = self.builder.get_object("main_window")
         self.window.connect("delete-event", Gtk.main_quit)
+        self.progress = self.builder.get_object("progress")
+        self.window.show()
+        self.cache = apt.Cache()
+
+        self.pkit_cancellable = None
         self.builder.get_object("pkit_update").connect("clicked", self.pkit_update)
         self.builder.get_object("pkit_install").connect("clicked", self.pkit_install)
         self.builder.get_object("pkit_remove").connect("clicked", self.pkit_remove)
         self.builder.get_object("pkit_purge").connect("clicked", self.pkit_purge)
         self.builder.get_object("pkit_cancel").connect("clicked", self.pkit_cancel)
-        self.pkit_progress = self.builder.get_object("pkit_progress")
-        self.window.show()
-        self.cache = apt.Cache()
-        self.pkit_cancellable = None
+
+        self.aptd_client = client.AptClient()
+        self.builder.get_object("aptd_update").connect("clicked", self.aptd_update)
+        self.builder.get_object("aptd_install").connect("clicked", self.aptd_install)
+        self.builder.get_object("aptd_remove").connect("clicked", self.aptd_remove)
+        self.builder.get_object("aptd_cancel").connect("clicked", self.aptd_cancel)
+
+    def get_packages(self):
+        pkgs = []
+        for name in self.builder.get_object("entry").get_text().split(" "):
+            if name in self.cache:
+                pkgs.append(self.cache[name])
+        return pkgs
+
+    def get_package_names(self):
+        names = []
+        for pkg in self.get_packages():
+            names.append(pkg.name)
+        return names
+
+    def finished(self):
+        XApp.set_window_progress(self.window, 0)
+        self.progress.set_fraction(0.0)
+        self.progress.set_text("Finished")
+
+    ##################################################################################
+    ## PACKAGE KIT
+    ##################################################################################
 
     def get_pkit_ids(self):
         """ pkit works with IDs, not just pkg names """
         pkg_ids = []
-        for name in self.builder.get_object("pkit_entry").get_text().split(" "):
-            if name in self.cache:
-                pkg = self.cache[name].candidate
-                pkg_id = f"{pkg.package.shortname};{pkg.version};{pkg.architecture};"
-                pkg_ids.append(pkg_id)
+        for pkg in self.get_packages():
+            pkg_id = f"{pkg.shortname};{pkg.candidate.version};{pkg.candidate.architecture};"
+            pkg_ids.append(pkg_id)
         return pkg_ids
 
     def pkit_update(self, button):
@@ -42,32 +78,30 @@ class App():
 
     def on_pkit_progress(self, progress, ptype, data=None):
         if progress.get_status() == PackageKitGlib.StatusEnum.DOWNLOAD:
-            self.pkit_progress.set_text("Downloading...")
+            self.progress.set_text("Downloading...")
         elif progress.get_status() == PackageKitGlib.StatusEnum.INSTALL:
-            self.pkit_progress.set_text("Installing...")
+            self.progress.set_text("Installing...")
         elif progress.get_status() == PackageKitGlib.StatusEnum.REMOVE:
-            self.pkit_progress.set_text("Removing...")
+            self.progress.set_text("Removing...")
         elif progress.get_status() == PackageKitGlib.StatusEnum.CANCEL:
-            self.pkit_progress.set_text("Cancelling...")
+            self.progress.set_text("Cancelling...")
         elif progress.get_status() == PackageKitGlib.StatusEnum.LOADING_CACHE:
-            self.pkit_progress.set_text("Loading cache...")
+            self.progress.set_text("Loading cache...")
         else:
-            self.pkit_progress.set_text("")
+            self.progress.set_text("")
         if ptype == PackageKitGlib.ProgressType.PERCENTAGE:
             prog_value = progress.get_property('percentage')
-            self.pkit_progress.set_fraction(prog_value / 100.0)
+            self.progress.set_fraction(prog_value / 100.0)
             XApp.set_window_progress(self.window, prog_value)
 
     def on_pkit_finished(self, source, result, data=None):
-        XApp.set_window_progress(self.window, 0)
-        self.pkit_progress.set_fraction(0.0)
-        self.pkit_progress.set_text("Finished")
+        self.finished()
         print("Pkit update finished")
         try:
             results = source.generic_finish(result)
         except Exception as e:
             error = e.message
-            self.pkit_progress.set_text(f"Error: {error}")
+            self.progress.set_text(f"Error: {error}")
             print("Pkit update error:", e.message)
 
     def pkit_install(self, button):
@@ -110,6 +144,63 @@ class App():
         print("Pkit cancel")
         if self.pkit_cancellable != None:
             self.pkit_cancellable.cancel()
+
+
+    ##################################################################################
+    ## APTDAEMON
+    ##################################################################################
+    def aptd_install(self, button):
+        packages = self.get_package_names()
+        print(packages)
+        self.transaction = self.aptd_client.commit_packages(install=packages, remove=[],
+                                                               reinstall=[], purge=[], upgrade=[], downgrade=[])
+        self.transaction.set_allow_unauthenticated(True)
+        self.transaction.connect("progress-changed", self.on_aptd_progress)
+        self.transaction.connect("cancellable-changed", self.on_aptd_cancel)
+        self.transaction.connect("finished", self.on_aptd_finished)
+        self.transaction.connect("error", self.on_aptd_error)
+        self.transaction.run()
+
+    def aptd_remove(self, button):
+        packages = self.get_package_names()
+        self.transaction = self.aptd_client.commit_packages(install=[], remove=packages,
+                                                               reinstall=[], purge=[], upgrade=[], downgrade=[])
+        self.transaction.set_allow_unauthenticated(True)
+        self.transaction.connect("progress-changed", self.on_aptd_progress)
+        self.transaction.connect("cancellable-changed", self.on_aptd_cancel)
+        self.transaction.connect("finished", self.on_aptd_finished)
+        self.transaction.connect("error", self.on_aptd_error)
+        self.transaction.run()
+
+    def aptd_update(self, button):
+        self.update_transaction = self.aptd_client.update_cache()
+        self.update_transaction.connect("finished", self.on_aptd_finished)
+        dia = AptProgressDialog(self.update_transaction)
+        dia.set_transient_for(self.window)
+        dia.set_modal(True)
+        dia.run(close_on_finished=True, show_error=True,
+                reply_handler=lambda: True
+                )
+
+    def aptd_cancel(self, button):
+        self.transaction.cancel()
+
+    def on_aptd_progress(self, transaction, progress):
+        #print(progress)
+        self.progress.set_text("Applying changes...")
+        self.progress.set_fraction(progress / 100.0)
+        XApp.set_window_progress(self.window, progress)
+
+    def on_aptd_cancel(self, transaction, cancellable):
+        pass
+
+    def on_aptd_error(self, transaction, error_code, error_details):
+        print(error_details)
+        self.progress.set_text(f"Error: {error_details}")
+
+    def on_aptd_finished(self, transaction, exit_state):
+        self.finished()
+        print("APTd transaction finished")
 
 
 App()

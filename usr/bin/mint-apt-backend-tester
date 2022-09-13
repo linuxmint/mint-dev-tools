@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+
+import gi
+import apt
+gi.require_version("Gtk", "3.0")
+gi.require_version("XApp", "1.0")
+gi.require_version("PackageKitGlib", "1.0")
+from gi.repository import Gtk, Gio, XApp
+from gi.repository import PackageKitGlib
+
+class App():
+    def __init__(self):
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file("/usr/share/mint-dev-tools/mint-apt-backend-tester.ui")
+        self.window = self.builder.get_object("main_window")
+        self.window.connect("delete-event", Gtk.main_quit)
+        self.builder.get_object("pkit_update").connect("clicked", self.pkit_update)
+        self.builder.get_object("pkit_install").connect("clicked", self.pkit_install)
+        self.builder.get_object("pkit_remove").connect("clicked", self.pkit_remove)
+        self.builder.get_object("pkit_purge").connect("clicked", self.pkit_purge)
+        self.builder.get_object("pkit_cancel").connect("clicked", self.pkit_cancel)
+        self.pkit_progress = self.builder.get_object("pkit_progress")
+        self.window.show()
+        self.cache = apt.Cache()
+        self.pkit_cancellable = None
+
+    def get_pkit_ids(self):
+        """ pkit works with IDs, not just pkg names """
+        pkg_ids = []
+        for name in self.builder.get_object("pkit_entry").get_text().split(" "):
+            if name in self.cache:
+                pkg = self.cache[name].candidate
+                pkg_id = f"{pkg.package.shortname};{pkg.version};{pkg.architecture};"
+                pkg_ids.append(pkg_id)
+        return pkg_ids
+
+    def pkit_update(self, button):
+        print("Pkit update")
+        task = PackageKitGlib.Task()
+        self.pkit_cancellable = Gio.Cancellable()
+        task.refresh_cache_async(True, self.pkit_cancellable, self.on_pkit_progress, (None, ), self.on_pkit_finished, (None, ))
+
+    def on_pkit_progress(self, progress, ptype, data=None):
+        if progress.get_status() == PackageKitGlib.StatusEnum.DOWNLOAD:
+            self.pkit_progress.set_text("Downloading...")
+        elif progress.get_status() == PackageKitGlib.StatusEnum.INSTALL:
+            self.pkit_progress.set_text("Installing...")
+        elif progress.get_status() == PackageKitGlib.StatusEnum.REMOVE:
+            self.pkit_progress.set_text("Removing...")
+        elif progress.get_status() == PackageKitGlib.StatusEnum.CANCEL:
+            self.pkit_progress.set_text("Cancelling...")
+        elif progress.get_status() == PackageKitGlib.StatusEnum.LOADING_CACHE:
+            self.pkit_progress.set_text("Loading cache...")
+        else:
+            self.pkit_progress.set_text("")
+        if ptype == PackageKitGlib.ProgressType.PERCENTAGE:
+            prog_value = progress.get_property('percentage')
+            self.pkit_progress.set_fraction(prog_value / 100.0)
+            XApp.set_window_progress(self.window, prog_value)
+
+    def on_pkit_finished(self, source, result, data=None):
+        XApp.set_window_progress(self.window, 0)
+        self.pkit_progress.set_fraction(0.0)
+        self.pkit_progress.set_text("Finished")
+        print("Pkit update finished")
+        try:
+            results = source.generic_finish(result)
+        except Exception as e:
+            error = e.message
+            self.pkit_progress.set_text(f"Error: {error}")
+            print("Pkit update error:", e.message)
+
+    def pkit_install(self, button):
+        print("Pkit install")
+        self.pkit_cancellable = Gio.Cancellable()
+        task = PackageKitGlib.Task()
+        pkg_ids = self.get_pkit_ids()
+        if len(pkg_ids) > 0:
+            print(pkg_ids)
+            task.install_packages_async(pkg_ids,
+                            self.pkit_cancellable,  # cancellable
+                            self.on_pkit_progress,
+                            (None, ),  # progress data
+                            self.on_pkit_finished,  # callback ready
+                            None  # callback data
+                            )
+
+    def pkit_remove(self, button):
+        print("Pkit remove")
+        self.pkit_cancellable = Gio.Cancellable()
+        task = PackageKitGlib.Task()
+        pkg_ids = self.get_pkit_ids()
+        if len(pkg_ids) > 0:
+            print(pkg_ids)
+            task.remove_packages_async(pkg_ids,
+                            False,  # allow deps
+                            True,  # autoremove
+                            self.pkit_cancellable,  # cancellable
+                            self.on_pkit_progress,
+                            (None, ),  # progress data
+                            self.on_pkit_finished,  # callback ready
+                            None  # callback data
+                            )
+
+    def pkit_purge(self, button):
+        print("Pkit purge")
+        pass
+
+    def pkit_cancel(self, button):
+        print("Pkit cancel")
+        if self.pkit_cancellable != None:
+            self.pkit_cancellable.cancel()
+
+
+App()
+Gtk.main()

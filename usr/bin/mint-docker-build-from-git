@@ -17,9 +17,10 @@ suffixes["mint20.1"] = "ulyssa"
 suffixes["mint20.2"] = "uma"
 suffixes["mint20.3"] = "una"
 suffixes["mint21"] = "vanessa"
+suffixes["mint21.1"] = "vera"
 
 # Releases which only support 64-bit
-only_64bit_releases = ["mint20", "mint20.1", "mint20.2", "mint20.3", "mint21"]
+only_64bit_releases = ["mint20", "mint20.1", "mint20.2", "mint20.3", "mint21", "mint21.1"]
 
 import sys
 import os

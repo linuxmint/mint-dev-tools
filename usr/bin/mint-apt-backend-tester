@@ -138,7 +138,20 @@ class App():
 
     def pkit_purge(self, button):
         print("Pkit purge")
-        pass
+        self.pkit_cancellable = Gio.Cancellable()
+        task = PackageKitGlib.Task()
+        pkg_ids = self.get_pkit_ids()
+        if len(pkg_ids) > 0:
+            print(pkg_ids)
+            task.purge_packages_async(pkg_ids,
+                            False,  # allow deps
+                            True,  # autoremove
+                            self.pkit_cancellable,  # cancellable
+                            self.on_pkit_progress,
+                            (None, ),  # progress data
+                            self.on_pkit_finished,  # callback ready
+                            None  # callback data
+                            )
 
     def pkit_cancel(self, button):
         print("Pkit cancel")

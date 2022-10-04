@@ -69,14 +69,16 @@ print("Current Chromium version is %s" % latest_chromium_version)
 print("\n")
 
 parser = argparse.ArgumentParser(description="Download and install a browser for testing")
-parser.add_argument("-b", "--browser", type=str, help="Specify a browser", required=True)
+parser.add_argument("browser", metavar="firefox|chromium", type=str, help="Specify a browser", nargs=1)
 parser.add_argument("-v", "--version", type=str, help="Specify a version")
 args = parser.parse_args()
 
+browser = args.browser[0]
+
 if args.version == None:
-    if args.browser == "chromium":
+    if browser == "chromium":
         version = latest_chromium_version
-    elif args.browser == "firefox":
+    elif browser == "firefox":
         version = latest_firefox_version
 else:
     version = args.version
@@ -112,40 +114,60 @@ if arch_info[0] == "64bit":
 elif arch_info[0] == "32bit":
     arch = "i386"
 
-if args.browser == "firefox":
-    if codename in firefox_mint_to_ubuntu.keys():
-        root_folder = "firefox-mint"
-        path_to_tar = os.path.join(root_folder, "firefox_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
-        tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
-        tarpath = os.path.join(path_to_tar, tarfile)
-    elif codename in lmde.keys():
-        root_folder = "firefox-lmde"
-        path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
-        tarfile = "bundle-%s~linuxmint1+%s_%s.tar" % (version, codename, arch)
-        tarpath = os.path.join(path_to_tar, tarfile)
-elif args.browser == "chromium":
-    root_folder = "chromium"
-    if codename in chromium_mint.keys():
-        path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_mint[codename], arch))
-        deb = os.path.join(path_to_debs, "chromium_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
-        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
-    elif codename in lmde.keys():
-        if arch == "i386":
-            root_folder = "chromium-lmde"
-        path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
-        deb = os.path.join(path_to_debs, "chromium_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
-        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~linuxmint1+%s_%s.deb" % (version, codename, arch))
+tarfile = None
+tarpath = None
 
-with tempfile.TemporaryDirectory() as dirname:
-    if args.browser == "firefox":
-        os.system("wget -P %s %s" % (dirname, os.path.join(IP, tarpath)))
-        os.chdir(dirname)
-        os.system("tar xf %s" % tarfile)
-        os.system("sudo dpkg -i *.deb")
-    elif args.browser == "chromium":
-        os.system("wget -P %s %s" % (dirname, os.path.join(IP, deb)))
-        os.system("wget -P %s %s" % (dirname, os.path.join(IP, deb_dbg)))
-        os.chdir(dirname)
-        os.system("sudo dpkg -i *.deb")
+deb = None
+deb_dbg = None
+
+success = False
+
+for suffix, release_id in (("","linuxmint1"), ("-beta", "beta")):
+    if browser == "firefox":
+        if codename in firefox_mint_to_ubuntu.keys():
+            root_folder = "firefox-mint%s" % suffix
+            path_to_tar = os.path.join(root_folder, "firefox_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
+            tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
+            tarpath = os.path.join(path_to_tar, tarfile)
+        elif codename in lmde.keys():
+            root_folder = "firefox-lmde%s" % suffix
+            path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
+            tarfile = "bundle-%s~linuxmint1+%s_%s.tar" % (version, codename, arch)
+            tarpath = os.path.join(path_to_tar, tarfile)
+
+    elif browser == "chromium":
+        root_folder = "chromium%s" % suffix
+        if codename in chromium_mint.keys():
+            path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_mint[codename], arch))
+            deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+            deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+        elif codename in lmde.keys():
+            if arch == "i386":
+                root_folder = "chromium-lmde"
+            path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
+            deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+            deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+
+    with tempfile.TemporaryDirectory() as dirname:
+        def call(command):
+            return_code = os.system(command)
+            if return_code != 0:
+                raise Exception("Command '%s' failed..." % command)
+
+        try:
+            if browser == "firefox":
+                call("wget -P %s %s" % (dirname, os.path.join(IP, tarpath)))
+                os.chdir(dirname)
+                call("tar xf %s" % tarfile)
+                call("sudo dpkg -i *.deb")
+            elif browser == "chromium":
+                call("wget -P %s %s" % (dirname, os.path.join(IP, deb)))
+                call("wget -P %s %s" % (dirname, os.path.join(IP, deb_dbg)))
+                os.chdir(dirname)
+                call("sudo dpkg -i *.deb")
+            break
+        except Exception as e:
+            print(e)
+            continue
 
 sys.exit(0)

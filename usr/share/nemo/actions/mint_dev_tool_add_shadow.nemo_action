@@ -4,7 +4,7 @@ Name=Add a shadow
 
 Comment=Add a shadow around the picture
 
-Exec=mint-add-shadow "%F"
+Exec=mint-add-shadow %F
 
 Selection=s
 

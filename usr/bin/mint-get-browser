@@ -12,23 +12,27 @@ from pkg_resources import parse_version
 
 from gi.repository import Gio, GLib
 
-def get_chromium_version():
-        url = requests.get("https://omahaproxy.appspot.com/all.json", timeout=30)
-        chromium_json = json.loads(url.text)
+IP = "135.181.5.124"
+
+chromium_resp = requests.get("https://omahaproxy.appspot.com/all.json", timeout=30)
+chromium_json = json.loads(chromium_resp.text)
+
+firefox_resp = requests.get("https://product-details.mozilla.org/1.0/firefox.json", timeout=30)
+firefox_json = json.loads(firefox_resp.text)
+
+def get_chromium_version(which="stable"):
+        if which not in ("stable", "beta"):
+            return None
         for platform in chromium_json:
             if platform["os"] == "linux":
                 for version in platform["versions"]:
-                    if version["channel"] == "stable":
+                    if version["channel"] == which:
                         return version["version"]
         return None
 
 def get_firefox_version_json(which="stable"):
-    res = requests.get("https://product-details.mozilla.org/1.0/firefox.json", timeout=30)
-    firefox_json = json.loads(res.text)
-
     mrv = parse_version("0")
     mrr = ""
-
     releases = firefox_json["releases"]
     for release_name in releases.keys():
         if which == "esr" and "esr" not in release_name:
@@ -60,30 +64,37 @@ def get_firefox_version_json(which="stable"):
                 mrr = release_name
     return mrr.replace("firefox-", "")
 
-latest_chromium_version = get_chromium_version()
-latest_firefox_version = get_firefox_version_json()
-
-print("\n")
-print("Current Firefox version is %s" % latest_firefox_version)
-print("Current Chromium version is %s" % latest_chromium_version)
-print("\n")
+print("")
+print("Current STABLE Firefox version is %s" % get_firefox_version_json("stable"))
+print("Current BETA Firefox version is %s" % get_firefox_version_json("beta"))
+print("")
+print("Current STABLE Chromium version is %s" % get_chromium_version("stable"))
+print("Current BETA Chromium version is %s" % get_chromium_version("beta"))
+print("")
 
 parser = argparse.ArgumentParser(description="Download and install a browser for testing")
 parser.add_argument("browser", metavar="firefox|chromium", type=str, help="Specify a browser", nargs=1)
-parser.add_argument("-v", "--version", type=str, help="Specify a version")
+parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable' or 'beta' ('stable' is the default)")
 args = parser.parse_args()
 
 browser = args.browser[0]
 
-if args.version == None:
-    if browser == "chromium":
-        version = latest_chromium_version
-    elif browser == "firefox":
-        version = latest_firefox_version
+if browser == "chromium":
+    if args.version in (None, "stable"):
+        version = get_chromium_version("stable")
+    elif args.version == "beta":
+        version = get_chromium_version("beta")
+    else:
+        version = args.version
+elif browser == "firefox":
+    if args.version in (None, "stable"):
+        version = get_firefox_version_json("stable")
+    elif args.version == "beta":
+        version = get_firefox_version_json("beta")
+    else:
+        version = args.version
 else:
     version = args.version
-
-IP = "135.181.5.124"
 
 firefox_mint_to_ubuntu = {
     "vanessa" : "jammy",

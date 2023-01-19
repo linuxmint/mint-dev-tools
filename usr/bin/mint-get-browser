@@ -97,6 +97,7 @@ else:
     version = args.version
 
 firefox_mint_to_ubuntu = {
+    "victoria" : "jammy",
     "vera" : "jammy",
     "vanessa" : "jammy",
     "una" : "focal",
@@ -112,6 +113,7 @@ lmde = {
 chromium_mint = {
     "una" : "mint20",
     "vera": "mint21.1",
+    "victoria": "mint21.2",
     "vanessa": "mint21"
 }
 

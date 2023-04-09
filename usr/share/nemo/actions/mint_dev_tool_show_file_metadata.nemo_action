@@ -1,0 +1,11 @@
+[Nemo Action]
+
+Name=View file metadata
+
+Comment=View gvfs metadata for %U
+
+Exec=mint-show-gvfs-metadata %U
+
+Selection=s
+
+Extensions=any;

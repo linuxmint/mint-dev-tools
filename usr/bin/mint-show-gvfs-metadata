@@ -1,0 +1,344 @@
+#!/usr/bin/python3
+
+import os
+import sys
+from setproctitle import setproctitle
+import argparse
+import re
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("XApp", "1.0")
+from gi.repository import Gtk, XApp, Gio, GLib, Pango
+
+COL_NAME = 0
+COL_VALUE = 1
+COL_EDITABLE = 2
+COL_TYPE_STR = 3
+COL_TYPE = 4
+COL_WEIGHT = 5
+
+class AddDialog(Gtk.Dialog):
+    def __init__(self):
+        Gtk.Dialog.__init__(self)
+
+        self.add_button("Add", Gtk.ResponseType.ACCEPT)
+        self.add_button("Cancel", Gtk.ResponseType.CANCEL)
+
+        content = self.get_content_area()
+        top_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=6)
+        content.pack_start(top_row, False, False, 0)
+
+        label = Gtk.Label(label="Name:")
+        top_row.pack_start(label, False, False, 4)
+        self.name_entry = Gtk.Entry(width_chars=40, text="metadata::")
+        self.name_entry.set_position(-1)
+        self.name_entry.set_activates_default(True)
+        # self.name_entry.select_region(0, 1)
+        top_row.pack_start(self.name_entry, True, True, 4)
+
+        self.type_combo = Gtk.ComboBox()
+        renderer_text = Gtk.CellRendererText()
+        self.type_combo.pack_start(renderer_text, True)
+        self.type_combo.add_attribute(renderer_text, "text", 0)
+
+        self.model = Gtk.ListStore(str, Gio.FileAttributeType)
+
+        # We can only write two types.
+        t = Gio.FileAttributeType.STRING
+        self.model.append([t.value_nick, t])
+        t = Gio.FileAttributeType.STRINGV
+        self.model.append([t.value_nick, t])
+
+        self.type_combo.set_model(self.model)
+        self.type_combo.set_id_column(0)
+        self.type_combo.set_active(0)
+
+        top_row.pack_start(self.type_combo, False, False, 4)
+
+        bottom_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        content.pack_start(bottom_row, False, False, 6)
+        label = Gtk.Label(label="Value:")
+        bottom_row.pack_start(label, False, False, 4)
+        self.value_entry = Gtk.Entry()
+        self.value_entry.set_activates_default(True)
+        bottom_row.pack_start(self.value_entry, True, True, 4)
+
+        self.name_entry.grab_focus_without_selecting()
+        self.set_default_response(Gtk.ResponseType.ACCEPT)
+
+    def get_val_type(self):
+        iter_ = self.type_combo.get_active_iter()
+
+        return self.model.get(iter_, 1)[0]
+
+class MainWindow(XApp.GtkWindow):
+    def __init__(self, file):
+        XApp.GtkWindow.__init__(self, default_width=600, default_height=500)
+        titlebar = Gtk.HeaderBar(subtitle="View/Edit file metadata",
+                                 title=file.get_basename(),
+                                 show_close_button=True)
+
+        self.set_titlebar(titlebar)
+
+        self.file = file
+
+        self.store = Gtk.TreeStore(str, str, bool, str, int, Gio.FileAttributeType)
+        self.store.set_sort_column_id(COL_NAME, Gtk.SortType.ASCENDING)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(box)
+
+        self.sw = Gtk.ScrolledWindow()
+        box.pack_start(self.sw, True, True, 0)
+
+        self.treeview = Gtk.TreeView()
+        self.treeview.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
+        self.sw.add(self.treeview)
+        self.treeview.set_model(self.store)
+
+        cr = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("Attribute Name", cr, markup=COL_NAME)
+        column.add_attribute(cr, "weight", COL_WEIGHT)
+        self.treeview.append_column(column)
+
+        cr = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("Value", cr, text=COL_VALUE)
+        column.add_attribute(cr, "editable", COL_EDITABLE)
+        column.add_attribute(cr, "weight", COL_WEIGHT)
+        cr.connect("edited", self.on_value_edited)
+        cr.props.max_width_chars = 60
+        cr.props.width_chars = 60
+        cr.props.ellipsize=Pango.EllipsizeMode.END
+        self.treeview.append_column(column)
+
+        cr = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("Attribute Type", cr, markup=COL_TYPE_STR)
+        column.add_attribute(cr, "weight", COL_WEIGHT)
+        self.treeview.append_column(column)
+
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4, margin=4)
+        box.pack_start(button_box, False, False, 0)
+
+        button = Gtk.Button(image=Gtk.Image.new_from_icon_name("list-remove-symbolic", Gtk.IconSize.SMALL_TOOLBAR))
+        button.connect("clicked", self.on_remove_clicked)
+        button_box.add(button)
+
+        button = Gtk.Button(image=Gtk.Image.new_from_icon_name("list-add-symbolic", Gtk.IconSize.SMALL_TOOLBAR))
+        button.connect("clicked", self.on_add_clicked)
+        button_box.add(button)
+
+        self.namespaces = Gtk.Label(xalign=1.0)
+        button_box.pack_start(self.namespaces, True, True, 6)
+
+        box.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0)
+
+        self.statusbar = Gtk.Statusbar()
+        self.context_id = self.statusbar.get_context_id("metadata-editor")
+        box.pack_start(self.statusbar, False, False, 0)
+
+        self.connect("delete-event", lambda w, e: Gtk.main_quit())
+
+        try:
+            self.monitor = self.file.monitor(Gio.FileMonitorFlags.NONE, None)
+            self.monitor.connect("changed", self.on_file_changed)
+        except GLib.Error as e:
+            print("Couldn't monitor %s for changes: %d - %s" % (self.file.get_basename(), e.code, e.message))
+        self.get_file_info()
+
+        self.show_all()
+        self.present()
+
+    def on_add_clicked(self, button, data=None):
+        d = AddDialog()
+        d.connect("response", self.add_response)
+        d.show_all()
+
+    def add_response(self, dialog, response):
+        if response == Gtk.ResponseType.ACCEPT:
+            name = dialog.name_entry.get_text()
+            val = dialog.value_entry.get_text()
+            val_type = dialog.get_val_type()
+            if name == "" or name.endswith("::") or val == "":
+                self.statusbar.push(self.context_id, "Missing or bad name or value")
+                return
+
+            if self.update_attribute(name, val, val_type, None):
+                cid = self.statusbar.get_context_id("added-info")
+                self.statusbar.push(self.context_id, "Added %s" % name)
+
+                self.get_file_info()
+                dialog.destroy()
+        else:
+            dialog.destroy()
+
+    def on_remove_clicked(self, button, data=None):
+        selection = self.treeview.get_selection()
+        model, rows = selection.get_selected_rows()
+        self.block_monitor = True
+
+        # process bottom-to-top to preserve paths
+        rows.reverse()
+        for row in rows:
+            iter_ = self.store.get_iter(row)
+            if iter_:
+                attr, value, type_ = self.store.get(iter_, COL_NAME, COL_VALUE, COL_TYPE)
+
+                if self.update_attribute(attr, "", type_, iter_):
+                    self.statusbar.push(self.context_id, "Removed %s" % attr)
+                    self.store.remove(iter_)
+
+    def on_file_changed(self, monitor, file, other_file, etype):
+        if not self.block_monitor:
+            self.get_file_info()
+
+    def get_file_info(self):
+        self.block_monitor = True
+        self.file.query_info_async("*", Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, None, self.query_info_cb)
+
+    def query_info_cb(self, file, res, data=None):
+        try:
+            info = file.query_info_finish(res)
+            self.populate_view(info)
+        except GLib.Error as e:
+            print("Couldn't get file attributes: %d - %s" % (e.code, e.message))
+
+        self.block_monitor = False
+
+    def populate_view(self, info):
+        self.store.clear()
+
+        try:
+            infolist = self.file.query_writable_namespaces(None)
+
+            writable = []
+
+            for ns in ("metadata", "xattr", "xattr-sys"):
+                if infolist.lookup(ns):
+                    writable.append(ns)
+
+            self.namespaces.set_label("Writable namespaces: %s" % str(writable))
+        except GLib.Error as e:
+            infolist = None
+
+        for attr in info.list_attributes(None):
+            iter_ = self.store.append(None)
+            self.store.set_value(iter_, COL_NAME, attr)
+
+            type_ = info.get_attribute_type(attr)
+            if type_ == Gio.FileAttributeType.STRINGV:
+                attr_strv = info.get_attribute_stringv(attr)
+
+            self.store.set_value(iter_, COL_VALUE, info.get_attribute_as_string(attr))
+
+            editable = infolist and infolist.lookup(attr.split("::")[0])
+            self.store.set_value(iter_, COL_EDITABLE, editable)
+            self.store.set_value(iter_, COL_TYPE_STR, info.get_attribute_type(attr).value_nick)
+            self.store.set_value(iter_, COL_TYPE, info.get_attribute_type(attr))
+            self.store.set_value(iter_, COL_WEIGHT, 800 if editable else 400)
+
+    def on_value_edited(self, cr, path, text):
+        self.block_monitor = True
+
+        iter_ = self.store.get_iter(path)
+        if iter_:
+            attr, value, type_ = self.store.get(iter_, COL_NAME, COL_VALUE, COL_TYPE)
+
+            if value == text:
+                return
+
+            if self.update_attribute(attr, text, type_, iter_):
+                self.statusbar.push(self.context_id, "Updated %s" % attr)
+                self.store.set_value(iter_, COL_VALUE, text)
+
+        self.block_monitor = False
+
+    def update_attribute(self, attr, text, type_, iter_):
+        info = Gio.FileInfo()
+        delete = False
+
+        try:
+            evaled = eval(text)
+        except:
+            evaled = None
+
+        if text == "" or text is None:
+            info.set_attribute(attr, Gio.FileAttributeType.INVALID, 0)
+            delete = True
+        elif type_ == Gio.FileAttributeType.STRING:
+            info.set_attribute_string(attr, text)
+        elif type_ == Gio.FileAttributeType.BYTE_STRING:
+            info.set_attribute_byte_string(attr, bytes(text))
+        elif type_ == Gio.FileAttributeType.BOOLEAN:
+            if text.lower() in ("true", "false"):
+                info.set_attribute_boolean(attr, text.lower() == "true")
+        elif type_ == Gio.FileAttributeType.UINT32:
+            maybe_num = evaled
+            if isinstance(maybe_num, int) and maybe_num >= 0:
+                info.set_attribute_uint32(attr, maybe_num)
+        elif type_ == Gio.FileAttributeType.INT32:
+            maybe_num = evaled
+            if isinstance(maybe_num, int):
+                info.set_attribute_int32(attr, maybe_num)
+        elif type_ == Gio.FileAttributeType.UINT64:
+            maybe_num = evaled
+            if isinstance(maybe_num, int) and maybe_num >= 0:
+                info.set_attribute_uint64(attr, maybe_num)
+        elif type_ == Gio.FileAttributeType.INT64:
+            maybe_num = evaled
+            if isinstance(maybe_num, int):
+                info.set_attribute_int64(attr, maybe_num)
+        elif type_ == Gio.FileAttributeType.STRINGV:
+            m = re.search(r'([\[]{0,1}[ ,a-zA-Z0-9_:\/]*[\]]{0,1})', text)
+            if m and m.group(1) == text:
+                vals = text.strip("[] ")
+                attrs = vals.split(",")
+                info.set_attribute_stringv(attr, attrs)
+        else:
+            print("Attribute type not supported for editing: %s (type %s)" % (attr, str(type_)))
+            self.statusbar.push(self.context_id, "Entry is not editable: %s" % attr)
+                
+            return False
+
+        if info.list_attributes() == []:
+            print("Couldn't set '%s' to '%s' (type %s) - maybe it's not valid" % (attr, text, str(type_)))
+            self.statusbar.push(self.context_id, "Couldn't set %s to '%s', maybe an invalid value?" % (attr, text))
+            return False
+
+        try:
+            success = self.file.set_attributes_from_info(info, Gio.FileQueryInfoFlags.NONE, None)
+            if delete and iter_:
+                self.store.remove(iter_)
+                self.statusbar.push(self.context_id, "Removed %s" % attr)
+                return False
+
+            return success
+        except GLib.Error as e:
+            print("Couldn't set file attribute: %d - %s" % (e.code, e.message))
+            self.statusbar.push(self.context_id, "Couldn't set %s to '%s': %s" % (attr, text, e.message))
+            return False
+
+        return False
+
+
+if __name__ == "__main__":
+    setproctitle("mint-show-gvfs-metadata")
+
+    parser = argparse.ArgumentParser(description="View and edit file vfs metadata")
+    parser.add_argument("file", help="Uri or path of the file you want to view metadata for.",
+                        action="store", nargs=1)
+    args = parser.parse_args()
+    maybe_uri = args.file[0]
+
+    try:
+        GLib.uri_parse(maybe_uri, 0)
+        file = Gio.File.new_for_uri(maybe_uri)
+    except GLib.Error:
+        file = Gio.File.new_for_path(maybe_uri)
+
+    if not file.query_exists(None):
+        print("File %s not found." % file.get_uri(), file=sys.stderr)
+        sys.exit(1)
+
+    MainWindow(file)
+    Gtk.main()

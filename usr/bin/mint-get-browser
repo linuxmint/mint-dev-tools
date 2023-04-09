@@ -14,7 +14,7 @@ from gi.repository import Gio, GLib
 
 IP = "135.181.5.124"
 
-chromium_resp = requests.get("https://omahaproxy.appspot.com/all.json", timeout=30)
+chromium_resp = requests.get("https://chromiumdash.appspot.com/fetch_releases?num=1", timeout=30)
 chromium_json = json.loads(chromium_resp.text)
 
 firefox_resp = requests.get("https://product-details.mozilla.org/1.0/firefox.json", timeout=30)
@@ -23,11 +23,10 @@ firefox_json = json.loads(firefox_resp.text)
 def get_chromium_version(which="stable"):
         if which not in ("stable", "beta"):
             return None
-        for platform in chromium_json:
-            if platform["os"] == "linux":
-                for version in platform["versions"]:
-                    if version["channel"] == which:
-                        return version["version"]
+        for release in chromium_json:
+            if release["platform"] == "Linux" and release["channel"] == which.capitalize():
+                print(release)
+                return release["version"]
         return None
 
 def get_firefox_version_json(which="stable"):
@@ -105,7 +104,7 @@ firefox_mint_to_ubuntu = {
     "tricia" : "bionic"
 }
 
-chromium_codename_image_map = {
+chromium_codename_to_image_map = {
     "elsie" : "lmde5",
     "debbie" : "lmde4",
     "una" : "mint20",
@@ -152,7 +151,7 @@ for suffix, release_id in (("","linuxmint1"), ("-beta", "beta")):
         if codename in chromium_codename_to_image_map.keys():
             if arch == "i386":
                 root_folder = "chromium-lmde"
-            path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_mint[codename], arch))
+            path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_codename_to_image_map[codename], arch))
             deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
             deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
 

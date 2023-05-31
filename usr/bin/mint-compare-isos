@@ -1,0 +1,184 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import subprocess
+
+class Package:
+
+    def __init__(self, name, version):
+        self.name = name
+        self.version = version
+
+
+class ISO:
+    def __init__(self, path, mount):
+        self.path = path
+        self.mount = mount
+        self.label = None
+        self.packages = []
+        self.package_names = []
+        self.rm_packages = []
+        self.rm_package_names = []
+        self.files = []
+        self.squash_files = []
+
+if len(sys.argv) != 3:
+    print("")
+    print("Usage: mint-compare-isos iso1 iso2")
+    print("")
+    sys.exit(1)
+
+iso1 = ISO(sys.argv[1], ".mint-compare-isos/iso1")
+iso2 = ISO(sys.argv[2], ".mint-compare-isos/iso2")
+
+for iso in [iso1, iso2]:
+    if not os.path.exists(iso.path):
+        print("ISO not found", iso.path)
+        sys.exit(1)
+
+    # Read the ISO volume ID
+    iso.label = subprocess.getoutput(f"isoinfo -d -i {iso.path} | grep 'Volume id'").replace("Volume id: ", "")
+
+    # Mount the ISO
+    if not os.path.exists(iso.mount):
+        subprocess.call(["mkdir", "-p", iso.mount])
+    subprocess.call(["sudo", "mount", "-o", "loop", iso.path, iso.mount])
+
+    # Read the manifest
+    manifest_path = os.path.join(iso.mount, "casper", "filesystem.manifest")
+    if not os.path.exists(manifest_path):
+        print("Manifest not found", manifest_path)
+        sys.exit(1)
+    with open(manifest_path, 'r') as manifest_file:
+        for line in manifest_file:
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            line = line.split("\t")
+            if len(line) == 2:
+                (package_name, package_version) = line
+
+            package_name = package_name.split(":amd64")[0]
+            package_name = package_name.split("-lts-")[0]
+            package = Package(package_name, package_version)
+            iso.packages.append(package)
+            iso.package_names.append(package_name)
+
+    # Read the remove manifest
+    manifest_path = os.path.join(iso.mount, "casper", "filesystem.manifest-remove")
+    if not os.path.exists(manifest_path):
+        print("Manifest not found", manifest_path)
+        sys.exit(1)
+    with open(manifest_path, 'r') as manifest_file:
+        for line in manifest_file:
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            line = line.split("\t")
+            if len(line) == 2:
+                (package_name, package_version) = line
+
+            package_name = package_name.split(":amd64")[0]
+            package_name = package_name.split("-lts-")[0]
+            package = Package(package_name, package_version)
+            iso.rm_packages.append(package)
+            iso.rm_package_names.append(package_name)
+
+    # Save the list of files
+    iso.files = subprocess.getoutput(f"find {iso.mount} -type f -printf '%P\n'").split("\n")
+
+    # Save the list of squashed files
+    files = subprocess.getoutput(f"unsquashfs -l {iso.mount}/casper/filesystem.squashfs").split("\n")
+    for file in files:
+        file = file.replace("squashfs-root/", "/")
+        if "/usr/lib/modules/" in file:
+            continue
+        if "__pycache__" in file:
+            continue
+        if "/usr/lib/debug" in file:
+            continue
+        if "/usr/share/icons" in file:
+            continue
+        if "/usr/share/doc" in file:
+            continue
+        if "/usr/src" in file:
+            continue
+        if "/var/cache" in file:
+            continue
+        iso.squash_files.append(file)
+    subprocess.call(["sudo", "umount", iso.mount])
+
+subprocess.call(["rm", "-rf", ".mint-compare-isos/"])
+
+print("")
+print("===========================================")
+print("")
+
+print(f"Packages only found in {iso1.label} ({iso1.path})")
+for package in iso1.package_names:
+    if package not in iso2.package_names:
+        print(f"         {package}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"Packages only found in {iso2.label} ({iso2.path})")
+for package in iso2.package_names:
+    if package not in iso1.package_names:
+        print(f"         {package}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"Removal Packages only found in {iso1.label} ({iso1.path})")
+for package in iso1.rm_package_names:
+    if package not in iso2.rm_package_names:
+        print(f"         {package}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"Removal Packages only found in {iso2.label} ({iso2.path})")
+for package in iso2.rm_package_names:
+    if package not in iso1.rm_package_names:
+        print(f"         {package}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"Files only found in {iso1.label} ({iso1.path})")
+for file in iso1.files:
+    if file not in iso2.files:
+        print(f"         {file}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"Files only found in {iso2.label} ({iso2.path})")
+for file in iso2.files:
+    if file not in iso1.files:
+        print(f"         {file}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"SquashFS files only found in {iso1.label} ({iso1.path})")
+for file in iso1.squash_files:
+    if file not in iso2.squash_files:
+        print(f"         {file}")
+
+print("")
+print("===========================================")
+print("")
+
+print(f"SquashFS files only found in {iso2.label} ({iso2.path})")
+for file in iso2.squash_files:
+    if file not in iso1.squash_files:
+        print(f"         {file}")

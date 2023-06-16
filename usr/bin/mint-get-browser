@@ -74,6 +74,7 @@ print("")
 parser = argparse.ArgumentParser(description="Download and install a browser for testing")
 parser.add_argument("browser", metavar="firefox|chromium", type=str, help="Specify a browser", nargs=1)
 parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable' or 'beta' ('stable' is the default)")
+parser.add_argument("-r", "--release", type=str, help="Specify a Mint release like vera or una (default is taken from host)")
 args = parser.parse_args()
 
 browser = args.browser[0]
@@ -113,10 +114,13 @@ chromium_codename_to_image_map = {
     "vanessa": "mint21"
 }
 
-try:
-    codename = lsb_release.get_os_release()["CODENAME"]
-except:
-    codename = lsb_release.get_lsb_information()["CODENAME"]
+if args.release:
+    codename = args.release
+else:
+    try:
+        codename = lsb_release.get_os_release()["CODENAME"]
+    except:
+        codename = lsb_release.get_lsb_information()["CODENAME"]
 
 arch_info = platform.architecture()
 

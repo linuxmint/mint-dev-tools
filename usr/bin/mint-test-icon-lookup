@@ -1,0 +1,139 @@
+#!/usr/bin/python3
+
+import sys
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gio, GLib
+
+class Test():
+    def __init__(self):
+        self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL, default_width=400, default_height=400)
+        hb = Gtk.HeaderBar(title="Icon Tester", show_close_button=True)
+        hb.set_subtitle("Enter an icon name, first pair uses strict lookup, second pair uses fallbacks")
+        self.window.set_titlebar(hb)
+
+        self.window.connect("delete-event", lambda w, e: Gtk.main_quit())
+
+        self.icon_name = ""
+
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        self.entry = Gtk.Entry()
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        hbox.pack_start(self.entry, True, True, 6)
+
+        self.entry_timeout_id = 0
+        self.entry.connect("changed", self.entry_changed)
+        label = Gtk.Label(label="UI Scale: <big><b>%d</b></big>" % self.main_box.get_scale_factor(), use_markup=True)
+        hbox.pack_end(label, False, False, 6)
+
+        self.main_box.pack_start(hbox, False, False, 6)
+        self.regen_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.main_box.pack_start(self.regen_box, True, True, 6)
+
+        self.window.add(self.main_box)
+        self.regen()
+
+        self.window.show_all()
+        self.window.present()
+
+    def regen(self):
+        self.entry_timeout_id = 0
+
+        for child in self.regen_box.get_children():
+            child.destroy()
+
+        self.lgroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+        self.igroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+        self.sigroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+
+        theme = Gtk.IconTheme.get_default()
+        if not theme.has_icon(self.icon_name):
+            self.icon_name = "image-missing"
+
+        headerbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = Gtk.Label(label=" ")
+        self.lgroup.add_widget(label)
+        headerbox.pack_start(label, False, False, 10)
+
+        label = Gtk.Label(label="<b>Color</b>", use_markup=True, yalign=1.0)
+        self.igroup.add_widget(label)
+        headerbox.pack_start(label, False, False, 10)
+        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+        label = Gtk.Label(label="<b>Symbolic</b>", use_markup=True, yalign=1.0)
+        self.sigroup.add_widget(label)
+        headerbox.pack_start(label, False, False, 10)
+        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+        label = Gtk.Label(label="<b>Color\nFallbacks</b>", use_markup=True, yalign=1.0)
+        self.igroup.add_widget(label)
+        headerbox.pack_start(label, False, False, 10)
+        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+        label = Gtk.Label(label="<b>Symbolic\nFallbacks</b>", use_markup=True, yalign=1.0)
+        self.sigroup.add_widget(label)
+        headerbox.pack_start(label, False, False, 10)
+        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+        self.regen_box.pack_start(headerbox, False, False, 2)
+
+        for size in [16, 22, 24, 32, 48, 64, 96, 128, 256]:
+            self.regen_box.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0)
+
+            iconbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+            label = Gtk.Label(label="<b>%dpx</b>" % size, xalign=1.0, use_markup=True)
+            self.lgroup.add_widget(label)
+            iconbox.pack_start(label, False, False, 10)
+            
+            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+            gicon = Gio.ThemedIcon.new(self.icon_name)
+            image = Gtk.Image(gicon=gicon, pixel_size=size)
+            self.igroup.add_widget(image)
+            iconbox.pack_start(image, False, False, 10)
+
+            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+            gicon = Gio.ThemedIcon.new(self.icon_name + "-symbolic")
+            image = Gtk.Image(gicon=gicon, pixel_size=size)
+            self.sigroup.add_widget(image)
+            iconbox.pack_start(image, False, False, 10)
+
+            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+            gicon = Gio.ThemedIcon.new_with_default_fallbacks(self.icon_name)
+            image = Gtk.Image(gicon=gicon, pixel_size=size)
+            self.igroup.add_widget(image)
+            iconbox.pack_start(image, False, False, 10)
+
+            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+            gicon = Gio.ThemedIcon.new_with_default_fallbacks(self.icon_name + "-symbolic")
+            image = Gtk.Image(gicon=gicon, pixel_size=size)
+            self.sigroup.add_widget(image)
+            iconbox.pack_start(image, False, False, 10)
+
+            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+
+            self.regen_box.pack_start(iconbox, False, False, 2)
+
+        self.regen_box.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0)
+        self.regen_box.show_all()
+
+        return GLib.SOURCE_REMOVE
+
+    def entry_changed(self, entry):
+        self.icon_name = self.entry.get_text()
+
+        if self.entry_timeout_id > 0:
+            GLib.source_remove(self.entry_timeout_id)
+
+        self.entry_timeout_id = GLib.timeout_add(300, self.regen)
+
+Test()
+Gtk.main()
+

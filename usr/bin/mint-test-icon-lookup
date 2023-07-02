@@ -4,7 +4,7 @@ import sys
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio, GLib
+from gi.repository import Gtk, Gio, GLib, Gdk
 
 class Test():
     def __init__(self):
@@ -16,19 +16,22 @@ class Test():
         self.window.connect("delete-event", lambda w, e: Gtk.main_quit())
 
         self.icon_name = ""
+        self.icon_theme = Gtk.IconTheme.get_default()
+        self.icon_theme.connect("changed", self.update_callback)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         self.entry = Gtk.Entry()
+        self.entry_timeout_id = 0
+        self.entry.connect("changed", self.update_callback)
+
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hbox.pack_start(self.entry, True, True, 6)
 
-        self.entry_timeout_id = 0
-        self.entry.connect("changed", self.entry_changed)
         label = Gtk.Label(label="UI Scale: <big><b>%d</b></big>" % self.main_box.get_scale_factor(), use_markup=True)
         hbox.pack_end(label, False, False, 6)
 
-        self.main_box.pack_start(hbox, False, False, 6)
+        hb.pack_start(hbox)
         self.regen_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_box.pack_start(self.regen_box, True, True, 6)
 
@@ -48,86 +51,95 @@ class Test():
         self.igroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         self.sigroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
 
-        theme = Gtk.IconTheme.get_default()
-        if not theme.has_icon(self.icon_name):
-            self.icon_name = "image-missing"
+        # if not self.icon_theme.has_icon(self.icon_name):
+            # self.icon_name = "image-missing"
 
-        headerbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        color_gicon = Gio.ThemedIcon.new(self.icon_name)
+        symbolic_gicon = Gio.ThemedIcon.new(self.icon_name + "-symbolic")
+        color_fb_gicon = Gio.ThemedIcon.new_with_default_fallbacks(self.icon_name)
+        symbolic_fb_gicon = Gio.ThemedIcon.new_with_default_fallbacks(self.icon_name + "-symbolic")
+
+        grid = Gtk.Grid(border_width=4, row_spacing=2, column_spacing=2)
+        self.regen_box.pack_start(grid, True, True, 0)
+
         label = Gtk.Label(label=" ")
-        self.lgroup.add_widget(label)
-        headerbox.pack_start(label, False, False, 10)
+        grid.attach(label, 0, 0, 1, 1)
+        grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), 1, 0, 1, 1)
 
-        label = Gtk.Label(label="<b>Color</b>", use_markup=True, yalign=1.0)
-        self.igroup.add_widget(label)
-        headerbox.pack_start(label, False, False, 10)
-        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+        label = Gtk.Label(label="<b>Color\n<small>%s</small></b>" \
+                % self.str_list(color_gicon.get_names()), use_markup=True, yalign=1.0, wrap=True, justify=Gtk.Justification.CENTER)
+        grid.attach(label, 2, 0, 1, 1)
+        grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), 3, 0, 1, 1)
 
-        label = Gtk.Label(label="<b>Symbolic</b>", use_markup=True, yalign=1.0)
-        self.sigroup.add_widget(label)
-        headerbox.pack_start(label, False, False, 10)
-        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+        label = Gtk.Label(label="<b>Symbolic\n<small>%s</small></b>" \
+                % self.str_list(symbolic_gicon.get_names()), use_markup=True, yalign=1.0, wrap=True, justify=Gtk.Justification.CENTER)
+        grid.attach(label, 4, 0, 1, 1)
+        grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), 5, 0, 1, 1)
 
-        label = Gtk.Label(label="<b>Color\nFallbacks</b>", use_markup=True, yalign=1.0)
-        self.igroup.add_widget(label)
-        headerbox.pack_start(label, False, False, 10)
-        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+        label = Gtk.Label(label="<b>Color Fallbacks\n<small>%s</small></b>" \
+                % self.str_list(color_fb_gicon.get_names()), use_markup=True, yalign=1.0, wrap=True,  justify=Gtk.Justification.CENTER)
+        grid.attach(label, 6, 0, 1, 1)
+        grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), 7, 0, 1, 1)
 
-        label = Gtk.Label(label="<b>Symbolic\nFallbacks</b>", use_markup=True, yalign=1.0)
-        self.sigroup.add_widget(label)
-        headerbox.pack_start(label, False, False, 10)
-        headerbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+        label = Gtk.Label(label="<b>Symbolic Fallbacks\n<small>%s</small></b>" \
+                % self.str_list(symbolic_fb_gicon.get_names()), use_markup=True, yalign=1.0, wrap=True,  justify=Gtk.Justification.CENTER)
+        grid.attach(label, 8, 0, 1, 1)
+        grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), 9, 0, 1, 1)
 
-        self.regen_box.pack_start(headerbox, False, False, 2)
-
+        row = 1
         for size in [16, 22, 24, 32, 48, 64, 96, 128, 256]:
-            self.regen_box.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0)
 
-            iconbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+            grid.attach(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), 0, row, 9, 1)
+            row += 1
 
-            label = Gtk.Label(label="<b>%dpx</b>" % size, xalign=1.0, use_markup=True)
-            self.lgroup.add_widget(label)
-            iconbox.pack_start(label, False, False, 10)
-            
-            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+            label = Gtk.Label(label="<b>%dpx: </b>" % size, xalign=1.0, use_markup=True)
+            grid.attach(label, 0, row, 1, 1)
+            grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), 1, row, 1, 1)
+            column = 2
 
-            gicon = Gio.ThemedIcon.new(self.icon_name)
-            image = Gtk.Image(gicon=gicon, pixel_size=size)
-            self.igroup.add_widget(image)
-            iconbox.pack_start(image, False, False, 10)
+            for gicon in [color_gicon, symbolic_gicon, color_fb_gicon, symbolic_fb_gicon]:
+                info = self.icon_theme.lookup_by_gicon_for_scale(gicon, size, self.main_box.get_scale_factor(), Gtk.IconLookupFlags.FORCE_SIZE)
+                icon_item = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                grid.attach(icon_item, column, row, 1, 1)
 
-            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+                surface = None
 
-            gicon = Gio.ThemedIcon.new(self.icon_name + "-symbolic")
-            image = Gtk.Image(gicon=gicon, pixel_size=size)
-            self.sigroup.add_widget(image)
-            iconbox.pack_start(image, False, False, 10)
+                try:
+                    if info:
+                        if "symbolic." in info.get_filename():
+                            pixbuf, was = info.load_symbolic_for_context(self.main_box.get_style_context())
+                            surface = Gdk.cairo_surface_create_from_pixbuf(pixbuf, icon_item.get_scale_factor(), None)
+                        else:
+                            surface = info.load_surface(None)
+                except Exception as e:
+                    print(e)
 
-            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+                if surface is not None:
+                    image = Gtk.Image(surface=surface, pixel_size=size)
+                else:
+                    image = Gtk.Image(icon_name="image-missing", pixel_size=size)
 
-            gicon = Gio.ThemedIcon.new_with_default_fallbacks(self.icon_name)
-            image = Gtk.Image(gicon=gicon, pixel_size=size)
-            self.igroup.add_widget(image)
-            iconbox.pack_start(image, False, False, 10)
+                icon_item.pack_start(image, False, False, 0)
+                if info:
+                    label = Gtk.Label(label="<small>%s</small>" % info.get_filename().split("icons/")[1], use_markup=True)
+                else:
+                    label = Gtk.Label(label="<small>not found</small>", use_markup=True)
+                icon_item.pack_start(label, False, False, 0)
 
-            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
+                grid.attach(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), column + 1, row, 1, 1)
+                column += 2
 
-            gicon = Gio.ThemedIcon.new_with_default_fallbacks(self.icon_name + "-symbolic")
-            image = Gtk.Image(gicon=gicon, pixel_size=size)
-            self.sigroup.add_widget(image)
-            iconbox.pack_start(image, False, False, 10)
+            row += 1
 
-            iconbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL), False, False, 0)
-
-            self.regen_box.pack_start(iconbox, False, False, 2)
-
-        self.regen_box.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0)
         self.regen_box.show_all()
 
         return GLib.SOURCE_REMOVE
 
-    def entry_changed(self, entry):
-        self.icon_name = self.entry.get_text()
+    def str_list(self, list):
+        return str(list).strip("[]")
+
+    def update_callback(self, data):
+        self.icon_name = self.entry.get_text().strip()
 
         if self.entry_timeout_id > 0:
             GLib.source_remove(self.entry_timeout_id)

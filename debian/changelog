@@ -1,3 +1,21 @@
+mint-dev-tools (1.4.0) victoria; urgency=medium
+
+  [ Michael Webster ]
+  * mint-get-browser: Allow specifying a release name.
+
+  [ Clement Lefebvre ]
+  * Add 21.2 BETA manifests
+
+  [ Michael Webster ]
+  * Add mint-test-icon-lookup
+  * mint-test-icon-lookup: Show actual files used for each icon.
+
+  [ Clement Lefebvre ]
+  * Add 21.2 manifests
+  * Add support for LMDE 6 Faye
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 20 Jul 2023 12:58:07 +0200
+
 mint-dev-tools (1.3.16) victoria; urgency=medium
 
   * Add mint-compare-isos

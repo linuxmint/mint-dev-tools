@@ -3,7 +3,7 @@
 import sys
 import os
 import argparse
-import lsb_release
+import csv
 import platform
 import tempfile
 import requests
@@ -25,7 +25,6 @@ def get_chromium_version(which="stable"):
             return None
         for release in chromium_json:
             if release["platform"] == "Linux" and release["channel"] == which.capitalize():
-                print(release)
                 return release["version"]
         return None
 
@@ -118,10 +117,16 @@ chromium_codename_to_image_map = {
 if args.release:
     codename = args.release
 else:
+    os_release = {}
+    with open("/etc/os-release") as f:
+        reader = csv.reader(f, delimiter="=")
+        os_release = dict(reader)
+
     try:
-        codename = lsb_release.get_os_release()["CODENAME"]
-    except:
-        codename = lsb_release.get_lsb_information()["CODENAME"]
+        codename = os_release["VERSION_CODENAME"]
+    except KeyError:
+        print("Autodetected codename not valid, provide one using -r")
+        sys.exit(1)
 
 arch_info = platform.architecture()
 
@@ -145,9 +150,9 @@ for suffix, release_id in (("","linuxmint1"), ("-beta", "beta")):
             path_to_tar = os.path.join(root_folder, "firefox_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
             tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
             tarpath = os.path.join(path_to_tar, tarfile)
-        elif codename in lmde.keys():
+        elif codename in chromium_codename_to_image_map.keys():
             root_folder = "firefox-lmde%s" % suffix
-            path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (lmde[codename], arch))
+            path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_codename_to_image_map[codename], arch))
             tarfile = "bundle-%s~linuxmint1+%s_%s.tar" % (version, codename, arch)
             tarpath = os.path.join(path_to_tar, tarfile)
 

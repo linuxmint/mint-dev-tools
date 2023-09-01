@@ -45,10 +45,20 @@ for iso in [iso1, iso2]:
         subprocess.call(["mkdir", "-p", iso.mount])
     subprocess.call(["sudo", "mount", "-o", "loop", iso.path, iso.mount])
 
+    # Detect if the live dir is /live or /casper
+    live_dir = "casper"
+    if not os.path.exists(os.path.join(iso.mount, live_dir)):
+        live_dir = "live"
+    if not os.path.exists(os.path.join(iso.mount, live_dir)):
+        print(f"Live directory not found in {iso.path}")
+        sys.exit(1)
+
     # Read the manifest
-    manifest_path = os.path.join(iso.mount, "casper", "filesystem.manifest")
+    manifest_path = os.path.join(iso.mount, live_dir, "filesystem.manifest")
     if not os.path.exists(manifest_path):
-        print("Manifest not found", manifest_path)
+        manifest_path = os.path.join(iso.mount, live_dir, "filesystem.packages")
+    if not os.path.exists(manifest_path):
+        print(f"Manifest not found in {iso.path}", manifest_path)
         sys.exit(1)
     with open(manifest_path, 'r') as manifest_file:
         for line in manifest_file:
@@ -66,9 +76,9 @@ for iso in [iso1, iso2]:
             iso.package_names.append(package_name)
 
     # Read the remove manifest
-    manifest_path = os.path.join(iso.mount, "casper", "filesystem.manifest-remove")
+    manifest_path = f"{manifest_path}-remove"
     if not os.path.exists(manifest_path):
-        print("Manifest not found", manifest_path)
+        print(f"Remove manifest not found in {iso.name}")
         sys.exit(1)
     with open(manifest_path, 'r') as manifest_file:
         for line in manifest_file:
@@ -89,7 +99,7 @@ for iso in [iso1, iso2]:
     iso.files = subprocess.getoutput(f"find {iso.mount} -type f -printf '%P\n'").split("\n")
 
     # Save the list of squashed files
-    files = subprocess.getoutput(f"unsquashfs -l {iso.mount}/casper/filesystem.squashfs").split("\n")
+    files = subprocess.getoutput(f"unsquashfs -l {iso.mount}/{live_dir}/filesystem.squashfs").split("\n")
     for file in files:
         file = file.replace("squashfs-root/", "/")
         if "/usr/lib/modules/" in file:

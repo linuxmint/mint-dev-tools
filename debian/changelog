@@ -1,3 +1,14 @@
+mint-dev-tools (1.4.1) victoria; urgency=medium
+
+  [ Michael Webster ]
+  * mint-get-browser: Don't use lsb_release.
+
+  [ Clement Lefebvre ]
+  * mint-docker-build-from-git: Add an option to skip installs
+  * mint-compare-isos: Add support for /live/filesystem.packages
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 15 Sep 2023 17:33:42 +0100
+
 mint-dev-tools (1.4.0) victoria; urgency=medium
 
   [ Michael Webster ]

@@ -58,7 +58,7 @@ parent_dir = "/".join(current_dir.split("/")[:-1])
 ssh_options = ""
 ssh_dir = os.path.expanduser("~/.ssh")
 if os.path.exists(ssh_dir):
-    ssh_options = "-v %s:/root/.ssh" % ssh_dir
+    ssh_options = "-v %s:/host_ssh" % ssh_dir
 
 for distribution in distributions:
     for arch in archs:
@@ -72,6 +72,8 @@ for distribution in distributions:
 
         # Build commands (to be run in docker)
         commands = []
+        if os.path.exists(ssh_dir):
+            commands.append("cp -R /host_ssh /root/.ssh")
         commands.append("cp /host_bin/mint-build /usr/bin/mint-build")
         commands.append("apt-get update")
         commands.append("apt-get install --yes openssh-client")

@@ -1,3 +1,19 @@
+mint-dev-tools (1.4.2) virginia; urgency=medium
+
+  [ Clement Lefebvre ]
+  * mint-docker-build-from-git: Preserve .ssh permissions on the host
+  * Add LMDE 6 manifests
+
+  [ carlosmintfan ]
+  * Recommend libxapp-dev (#26)
+
+  [ Clement Lefebvre ]
+  * Recommends: Replace gitk/gitg with sublime-merge
+  * mint-docker-build-from-git: Add the ability to enable Romeo
+  * Add support for Mint 21.3 Virginia
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sat, 18 Nov 2023 17:56:16 +0000
+
 mint-dev-tools (1.4.1) victoria; urgency=medium
 
   [ Michael Webster ]

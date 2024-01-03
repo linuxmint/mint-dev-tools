@@ -3,6 +3,7 @@
 Name=View file metadata
 
 Comment=View gvfs metadata for %U
+Quote=double
 
 Exec=mint-show-gvfs-metadata %U
 

@@ -19,6 +19,15 @@ def install():
     print("")
     call("sudo apt install --yes --allow-downgrades ../*.deb || sudo dpkg -i ../*.deb")
 
+
+def bash():
+    print("")
+    print("   #######################################################################")
+    print("   ### Bash")
+    print("   #######################################################################")
+    print("")
+    call("bash")
+
 def build(suffix):
     if os.path.exists("debian/changelog.orig"):
         call("mv debian/changelog.orig debian/changelog")
@@ -62,6 +71,7 @@ def copy_debs(deb_dir):
 
 parser = argparse.ArgumentParser(description='Build project')
 parser.add_argument("-i", "--install", action="store_true", help="Install built packages")
+parser.add_argument("-b", "--bash", action="store_true", help="Open a bash shell just before installing build dependencies (to troubleshoot)")
 parser.add_argument("-s", "--suffix", help="Version suffix", required=False)
 parser.add_argument("-g", "--git-repository", help="Git clone URL, or project name (for Mint projects on Github). Suffix with #tagname, #branchname or %%pullrequest to specify a branch, a tag, or a pull request to build from.", required=False)
 parser.add_argument("-t", "--temporary", action="store_true", help="Use a temporary directory for building")
@@ -116,6 +126,8 @@ if args.git_repository is not None:
         call("git checkout %s" % tag_branch)
 
 if os.path.exists('debian'):
+    if args.bash:
+        bash()
     build(args.suffix)
     if args.install:
         install()
@@ -133,6 +145,8 @@ else:
     for subdirectory in subdirectories:
         if os.path.isdir(subdirectory) and os.path.exists(os.path.join(subdirectory, "debian")):
             os.chdir(subdirectory)
+            if args.bash:
+                bash()
             build(args.suffix)
             if args.install:
                 install()

@@ -39,6 +39,7 @@ def call(command, exit_on_failure=True):
 parser = argparse.ArgumentParser(description='Build packages via Docker')
 parser.add_argument("-d", "--distributions", help="Distributions (comma separated)", default="mint19,lmde3")
 parser.add_argument("-b", "--bash", action="store_true", help="Open a bash shell just before installing build dependencies (to troubleshoot)")
+parser.add_argument("-u", "--update", action="store_true", help="Perform a dist-upgrade before building (needed when the pkg base isn't fully ready yet)")
 parser.add_argument("-n", "--without-suffix", help="No suffix", action='store_true', required=False)
 parser.add_argument("-r", "--romeo", help="Enable the Romeo repository", action='store_true', required=False)
 parser.add_argument("-g", "--git-repositories", help="Git clone URLs, or project names (for Mint projects on Github) (comma separated). . Suffix each repo with #tagname or #branchname to specify a branch or a tag to build from.", required=False)
@@ -82,6 +83,8 @@ for distribution in distributions:
         if args.romeo:
             commands.append("sed -i 's/import backport/import backport romeo/' /etc/apt/sources.list.d/*.list")
         commands.append("apt-get update")
+        if args.update:
+            commands.append("apt-get dist-upgrade --yes")
         commands.append("apt-get install --yes openssh-client")
         for repository in repositories:
             if args.bash:

@@ -1,0 +1,4 @@
+debian/mint-dev-tools
+debian/*substvars
+debian/*debhelper*
+debian/files

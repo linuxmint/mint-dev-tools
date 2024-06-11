@@ -1,3 +1,15 @@
+mint-dev-tools (1.4.3) wilma; urgency=medium
+
+  * mint-check-translations: Don't check ar/ur
+  * Add support for Mint 22 Wilma
+  * Add 21.3 manifests
+  * mint-build: Add a -b --bash option
+  * mint-docker-build-from-git: Add a dist-upgrade option
+  * Update manifests
+  * Add .gitignore
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 11 Jun 2024 17:20:49 +0100
+
 mint-dev-tools (1.4.2) virginia; urgency=medium
 
   [ Clement Lefebvre ]

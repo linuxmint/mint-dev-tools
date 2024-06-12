@@ -20,6 +20,9 @@ chromium_json = json.loads(chromium_resp.text)
 firefox_resp = requests.get("https://product-details.mozilla.org/1.0/firefox.json", timeout=30)
 firefox_json = json.loads(firefox_resp.text)
 
+thunderbird_resp = requests.get("https://product-details.mozilla.org/1.0/thunderbird.json", timeout=30)
+thunderbird_json = json.loads(thunderbird_resp.text)
+
 def get_chromium_version(which="stable"):
         if which not in ("stable", "beta"):
             return None
@@ -62,6 +65,31 @@ def get_firefox_version_json(which="stable"):
                 mrr = release_name
     return mrr.replace("firefox-", "")
 
+def get_thunderbird_version_json(which="major"):
+    mrv = parse_version("0")
+    mrr = ""
+    releases = thunderbird_json["releases"]
+    for release_name in releases.keys():
+        release = releases[release_name]
+        if which == "major":
+            if release["category"] != "major":
+                continue
+            if "b" in release["version"]:
+                continue
+            version = parse_version(release["version"])
+
+            if version > mrv:
+                mrv = version
+                mrr = release_name
+        elif which == "stability":
+            if release["category"] != "stability":
+                continue
+            version = parse_version(release["version"])
+            if version > mrv:
+                mrv = version
+                mrr = release_name
+    return mrr.replace("thunderbird-", "")
+
 print("")
 print("Current STABLE Firefox version is %s" % get_firefox_version_json("stable"))
 print("Current BETA Firefox version is %s" % get_firefox_version_json("beta"))
@@ -69,10 +97,13 @@ print("")
 print("Current STABLE Chromium version is %s" % get_chromium_version("stable"))
 print("Current BETA Chromium version is %s" % get_chromium_version("beta"))
 print("")
+print("Current LTS Thunderbird version is %s" % get_thunderbird_version_json("stability"))
+print("Current STABLE Thunderbird version is %s" % get_thunderbird_version_json("major"))
+print("")
 
 parser = argparse.ArgumentParser(description="Download and install a browser for testing")
-parser.add_argument("browser", metavar="firefox|chromium", type=str, help="Specify a browser", nargs=1)
-parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable' or 'beta' ('stable' is the default)")
+parser.add_argument("browser", metavar="firefox|chromium|thunderbird", type=str, help="Specify a browser", nargs=1)
+parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable', 'beta' or 'lts' ('stable' is the default, 'lts' is only valid for Thunderbird)")
 parser.add_argument("-r", "--release", type=str, help="Specify a Mint release like vera or una (default is taken from host)")
 args = parser.parse_args()
 
@@ -90,6 +121,13 @@ elif browser == "firefox":
         version = get_firefox_version_json("stable")
     elif args.version == "beta":
         version = get_firefox_version_json("beta")
+    else:
+        version = args.version
+elif browser == "thunderbird":
+    if args.version in (None, "stable"):
+        version = get_thunderbird_version_json("major")
+    elif args.version == "lts":
+        version = get_thunderbird_version_json("stability")
     else:
         version = args.version
 else:
@@ -160,6 +198,13 @@ for suffix, release_id in (("","linuxmint1"), ("-beta", "beta")):
             tarfile = "bundle-%s~linuxmint1+%s_%s.tar" % (version, codename, arch)
             tarpath = os.path.join(path_to_tar, tarfile)
 
+    elif browser == "thunderbird":
+        if codename in firefox_mint_to_ubuntu.keys():
+            root_folder = "thunderbird-mint%s" % suffix
+            path_to_tar = os.path.join(root_folder, "thunderbird_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
+            tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
+            tarpath = os.path.join(path_to_tar, tarfile)
+
     elif browser == "chromium":
         root_folder = "chromium%s" % suffix
         if codename in chromium_codename_to_image_map.keys():
@@ -176,7 +221,7 @@ for suffix, release_id in (("","linuxmint1"), ("-beta", "beta")):
                 raise Exception("Command '%s' failed..." % command)
 
         try:
-            if browser == "firefox":
+            if browser in ("firefox", "thunderbird"):
                 call("wget -P %s %s" % (dirname, os.path.join(IP, tarpath)))
                 os.chdir(dirname)
                 call("tar xf %s" % tarfile)

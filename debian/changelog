@@ -1,3 +1,12 @@
+mint-dev-tools (1.4.4) wilma; urgency=medium
+
+  [ Michael Webster ]
+  * mint_dev_tool_show_file_metadata.nemo_action: Fix quote handling.
+  * Add support for Thunderbird.
+  * Use the packaging.version module instead of package_resources, replace 'browser' with 'application/app'.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Fri, 21 Jun 2024 17:53:05 +0100
+
 mint-dev-tools (1.4.3) wilma; urgency=medium
 
   * mint-check-translations: Don't check ar/ur

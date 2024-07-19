@@ -65,29 +65,29 @@ def get_firefox_version_json(which="stable"):
                 mrr = release_name
     return mrr.replace("firefox-", "")
 
-def get_thunderbird_version_json(which="major"):
+def get_thunderbird_version_json(which="esr"):
+    res = requests.get("https://product-details.mozilla.org/1.0/thunderbird.json", timeout=30)
+    tbird_json = json.loads(res.text)
+
     mrv = Version("0")
     mrr = ""
-    releases = thunderbird_json["releases"]
+    version = None
+
+    releases = tbird_json["releases"]
     for release_name in releases.keys():
         release = releases[release_name]
-        if which == "major":
-            if release["category"] != "major":
-                continue
-            if "b" in release["version"]:
-                continue
-            version = Version(release["version"])
-
-            if version > mrv:
-                mrv = version
-                mrr = release_name
-        elif which == "stability":
-            if release["category"] != "stability":
-                continue
-            version = Version(release["version"])
-            if version > mrv:
-                mrv = version
-                mrr = release_name
+        if which == "esr":
+            if release["category"] == "esr":
+                version = Version(release["version"])
+        elif which == "stable":
+            if release["category"] == "stability":
+                version = Version(release["version"])
+        elif which == "beta":
+            if release["category"] == "dev":
+                version = Version(release["version"])
+        if version is not None and version > mrv:
+            mrv = version
+            mrr = release_name
     return mrr.replace("thunderbird-", "")
 
 print("")
@@ -97,14 +97,14 @@ print("")
 print("Current STABLE Chromium version is %s" % get_chromium_version("stable"))
 print("Current BETA Chromium version is %s" % get_chromium_version("beta"))
 print("")
-print("Current LTS Thunderbird version is %s" % get_thunderbird_version_json("stability"))
-print("Current STABLE Thunderbird version is %s" % get_thunderbird_version_json("major"))
+print("Current LTS Thunderbird version is %s" % get_thunderbird_version_json("esr"))
 print("")
 
 parser = argparse.ArgumentParser(description="Download and install an application for testing")
 parser.add_argument("app", metavar="firefox|chromium|thunderbird", type=str, help="Specify an application", nargs=1)
-parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable', 'beta' or 'lts' ('stable' is the default, 'lts' is only valid for Thunderbird)")
+parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable', 'beta' or 'esr' ('stable' is the default for all but Thunderbird, which is 'esr'")
 parser.add_argument("-r", "--release", type=str, help="Specify a Mint release like vera or una (default is taken from host)")
+parser.add_argument("-b", "--buildid", type=str, help="Build ID (linuxmint1, etc...) Defaults to linuxmint1", default="linuxmint1")
 args = parser.parse_args()
 
 app = args.app[0]
@@ -124,14 +124,15 @@ elif app == "firefox":
     else:
         version = args.version
 elif app == "thunderbird":
-    if args.version in (None, "stable"):
-        version = get_thunderbird_version_json("major")
-    elif args.version == "lts":
-        version = get_thunderbird_version_json("stability")
+    if args.version in (None, "esr"):
+        version = get_thunderbird_version_json("esr")
+        print(version, "fuck")
     else:
         version = args.version
 else:
     version = args.version
+
+print(args.version, version, args.buildid)
 
 firefox_mint_to_ubuntu = {
     "wilma" : "noble",
@@ -185,24 +186,24 @@ deb_dbg = None
 
 success = False
 
-for suffix, release_id in (("","linuxmint1"), ("-beta", "beta")):
+for suffix, release_id in (("", args.buildid), ("-beta", "beta")):
     if app == "firefox":
         if codename in firefox_mint_to_ubuntu.keys():
             root_folder = "firefox-mint%s" % suffix
             path_to_tar = os.path.join(root_folder, "firefox_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
-            tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
+            tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
             tarpath = os.path.join(path_to_tar, tarfile)
         elif codename in chromium_codename_to_image_map.keys():
             root_folder = "firefox-lmde%s" % suffix
             path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_codename_to_image_map[codename], arch))
-            tarfile = "bundle-%s~linuxmint1+%s_%s.tar" % (version, codename, arch)
+            tarfile = "bundle-%s~%s+%s_%s.tar" % (version, release_id, codename, arch)
             tarpath = os.path.join(path_to_tar, tarfile)
 
     elif app == "thunderbird":
         if codename in firefox_mint_to_ubuntu.keys():
             root_folder = "thunderbird-mint%s" % suffix
             path_to_tar = os.path.join(root_folder, "thunderbird_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
-            tarfile = "bundle-%s+linuxmint1+%s_%s.tar" % (version, codename, arch)
+            tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
             tarpath = os.path.join(path_to_tar, tarfile)
 
     elif app == "chromium":

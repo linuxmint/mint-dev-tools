@@ -12,10 +12,12 @@ gi.require_version("PackageKitGlib", "1.0")
 from gi.repository import PackageKitGlib
 
 #aptd
-from aptdaemon import client
-from aptdaemon.enums import ERROR_UNKNOWN
-from aptdaemon.errors import NotAuthorizedError, TransactionFailed
-from aptdaemon.gtk3widgets import AptErrorDialog, AptProgressDialog
+import aptdaemon.client
+import aptdaemon.gtk3widgets
+
+#aptk
+import aptkit.client
+import aptkit.gtk3widgets
 
 class App():
     def __init__(self):
@@ -34,11 +36,17 @@ class App():
         self.builder.get_object("pkit_purge").connect("clicked", self.pkit_purge)
         self.builder.get_object("pkit_cancel").connect("clicked", self.pkit_cancel)
 
-        self.aptd_client = client.AptClient()
+        self.aptd_client = aptdaemon.client.AptClient()
         self.builder.get_object("aptd_update").connect("clicked", self.aptd_update)
         self.builder.get_object("aptd_install").connect("clicked", self.aptd_install)
         self.builder.get_object("aptd_remove").connect("clicked", self.aptd_remove)
         self.builder.get_object("aptd_cancel").connect("clicked", self.aptd_cancel)
+
+        self.aptk_client = aptkit.client.AptClient()
+        self.builder.get_object("aptk_update").connect("clicked", self.aptk_update)
+        self.builder.get_object("aptk_install").connect("clicked", self.aptk_install)
+        self.builder.get_object("aptk_remove").connect("clicked", self.aptk_remove)
+        self.builder.get_object("aptk_cancel").connect("clicked", self.aptk_cancel)
 
     def get_packages(self):
         pkgs = []
@@ -188,7 +196,7 @@ class App():
     def aptd_update(self, button):
         self.update_transaction = self.aptd_client.update_cache()
         self.update_transaction.connect("finished", self.on_aptd_finished)
-        dia = AptProgressDialog(self.update_transaction)
+        dia = aptdaemon.gtk3widgets.AptProgressDialog(self.update_transaction)
         dia.set_transient_for(self.window)
         dia.set_modal(True)
         dia.run(close_on_finished=True, show_error=True,
@@ -214,6 +222,63 @@ class App():
     def on_aptd_finished(self, transaction, exit_state):
         self.finished()
         print("APTd transaction finished")
+
+
+    ##################################################################################
+    ## APTKIT
+    ##################################################################################
+    def aptk_install(self, button):
+        packages = self.get_package_names()
+        print(packages)
+        self.transaction = self.aptk_client.commit_packages(install=packages, remove=[],
+                                                               reinstall=[], purge=[], upgrade=[], downgrade=[])
+        self.transaction.set_allow_unauthenticated(True)
+        self.transaction.connect("progress-changed", self.on_aptk_progress)
+        self.transaction.connect("cancellable-changed", self.on_aptk_cancel)
+        self.transaction.connect("finished", self.on_aptk_finished)
+        self.transaction.connect("error", self.on_aptk_error)
+        self.transaction.run()
+
+    def aptk_remove(self, button):
+        packages = self.get_package_names()
+        self.transaction = self.aptk_client.commit_packages(install=[], remove=packages,
+                                                               reinstall=[], purge=[], upgrade=[], downgrade=[])
+        self.transaction.set_allow_unauthenticated(True)
+        self.transaction.connect("progress-changed", self.on_aptk_progress)
+        self.transaction.connect("cancellable-changed", self.on_aptk_cancel)
+        self.transaction.connect("finished", self.on_aptk_finished)
+        self.transaction.connect("error", self.on_aptk_error)
+        self.transaction.run()
+
+    def aptk_update(self, button):
+        self.update_transaction = self.aptk_client.update_cache()
+        self.update_transaction.connect("finished", self.on_aptk_finished)
+        dia = aptkit.gtk3widgets.AptProgressDialog(self.update_transaction)
+        dia.set_transient_for(self.window)
+        dia.set_modal(True)
+        dia.run(close_on_finished=True, show_error=True,
+                reply_handler=lambda: True
+                )
+
+    def aptk_cancel(self, button):
+        self.transaction.cancel()
+
+    def on_aptk_progress(self, transaction, progress):
+        #print(progress)
+        self.progress.set_text("Applying changes...")
+        self.progress.set_fraction(progress / 100.0)
+        XApp.set_window_progress(self.window, progress)
+
+    def on_aptk_cancel(self, transaction, cancellable):
+        pass
+
+    def on_aptk_error(self, transaction, error_code, error_details):
+        print(error_details)
+        self.progress.set_text(f"Error: {error_details}")
+
+    def on_aptk_finished(self, transaction, exit_state):
+        self.finished()
+        print("APTk transaction finished")
 
 
 App()

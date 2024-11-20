@@ -135,6 +135,7 @@ else:
 print(args.version, version, args.buildid)
 
 firefox_mint_to_ubuntu = {
+    "xia"   : "noble",
     "wilma" : "noble",
     "virginia" : "jammy",
     "victoria" : "jammy",
@@ -154,7 +155,8 @@ chromium_codename_to_image_map = {
     "virginia": "mint21",
     "victoria": "mint21",
     "vanessa": "mint21",
-    "wilma": "mint22"
+    "wilma": "mint22",
+    "xia"  : "mint22.1"
 }
 
 if args.release:

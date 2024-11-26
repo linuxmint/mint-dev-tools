@@ -126,13 +126,10 @@ elif app == "firefox":
 elif app == "thunderbird":
     if args.version in (None, "esr"):
         version = get_thunderbird_version_json("esr")
-        print(version, "fuck")
     else:
         version = args.version
 else:
     version = args.version
-
-print(args.version, version, args.buildid)
 
 firefox_mint_to_ubuntu = {
     "xia"   : "noble",

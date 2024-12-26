@@ -153,7 +153,7 @@ chromium_codename_to_image_map = {
     "victoria": "mint21",
     "vanessa": "mint21",
     "wilma": "mint22",
-    "xia"  : "mint22.1"
+    "xia"  : "mint22"
 }
 
 if args.release:

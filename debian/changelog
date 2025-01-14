@@ -1,3 +1,14 @@
+mint-dev-tools (1.4.8) xia; urgency=medium
+
+  [ Michael Webster ]
+  * mint-get-browser: remove debug lines.
+  * mint-get-browser: Fix xia lookup.
+
+  [ Clement Lefebvre ]
+  * Update manifests
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 14 Jan 2025 11:50:19 +0000
+
 mint-dev-tools (1.4.7) xia; urgency=medium
 
   [ Clement Lefebvre ]

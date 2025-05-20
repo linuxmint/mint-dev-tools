@@ -1,3 +1,13 @@
+mint-dev-tools (1.4.9) zara; urgency=medium
+
+  [ Michael Webster ]
+  * Fix thunderbird version check.
+
+  [ Clement Lefebvre ]
+  * Add support for Mint 22.2 Zara
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 20 May 2025 12:59:03 +0100
+
 mint-dev-tools (1.4.8) xia; urgency=medium
 
   [ Michael Webster ]

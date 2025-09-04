@@ -145,6 +145,7 @@ firefox_mint_to_ubuntu = {
 }
 
 chromium_codename_to_image_map = {
+    "gigi" : "lmde7",
     "faye" : "lmde6",
     "elsie" : "lmde5",
     "debbie" : "lmde4",

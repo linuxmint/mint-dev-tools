@@ -1,3 +1,11 @@
+mint-dev-tools (1.5.0) zara; urgency=medium
+
+  * Update manifests
+  * Add support for LMDE 7 Gigi
+  * Update manifests
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 04 Sep 2025 14:05:53 +0200
+
 mint-dev-tools (1.4.9) zara; urgency=medium
 
   [ Michael Webster ]

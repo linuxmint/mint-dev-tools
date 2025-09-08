@@ -43,20 +43,24 @@ for release in [release1, release2]:
                 continue
             release.specific_names.append(line)
 
-    with open("/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name, 'r') as manifest_file:
-        for line in manifest_file:
-            line = line.strip()
-            if line.startswith('#'):
-                continue
-            line = line.split("\t")
-            if len(line) == 2:
-                (package_name, package_version) = line
+    for manifest in ["/usr/share/mint-dev-tools/manifests/%s/filesystem.manifest" % release.name,
+                     "/usr/share/mint-dev-tools/manifests/%s/filesystem.packages" % release.name]:
+        if os.path.exists(manifest):
+            with open(manifest, 'r') as manifest_file:
+                for line in manifest_file:
+                    line = line.strip()
+                    if line.startswith('#'):
+                        continue
+                    line = line.split("\t")
+                    if len(line) == 2:
+                        (package_name, package_version) = line
 
-            package_name = package_name.split(":amd64")[0]
-            package_name = package_name.split("-lts-")[0]
-            package = Package(package_name, package_version)
-            release.packages.append(package)
-            release.package_names.append(package_name)
+                    package_name = package_name.split(":amd64")[0]
+                    package_name = package_name.split("-lts-")[0]
+                    package = Package(package_name, package_version)
+                    release.packages.append(package)
+                    release.package_names.append(package_name)
+            break
 
 print("Packages only found in %s:" % release1.name)
 for package in release1.package_names:

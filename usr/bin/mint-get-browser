@@ -77,7 +77,7 @@ def get_thunderbird_version_json(which="esr"):
     for release_name in releases.keys():
         release = releases[release_name]
         if which == "esr":
-            if release_name.endswith("esr") and release["category"] in ("major", "stability"):
+            if release_name.endswith("esr") and release["category"] in ("esr",):
                 version = Version(release["version"])
         elif which == "stable":
             if release["category"] == "stability":

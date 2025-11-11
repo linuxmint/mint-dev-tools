@@ -1,3 +1,9 @@
+mint-dev-tools (1.5.2) zena; urgency=medium
+
+  * Add support for Mint 22.3 Zena
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 11 Nov 2025 15:49:18 +0000
+
 mint-dev-tools (1.5.1) zara; urgency=medium
 
   [ Clement Lefebvre ]

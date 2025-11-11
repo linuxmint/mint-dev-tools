@@ -132,6 +132,7 @@ else:
     version = args.version
 
 firefox_mint_to_ubuntu = {
+    "zena"   : "noble",
     "zara"   : "noble",
     "xia"   : "noble",
     "wilma" : "noble",
@@ -156,7 +157,8 @@ chromium_codename_to_image_map = {
     "vanessa": "mint21",
     "wilma": "mint22",
     "xia"  : "mint22",
-    "zara"  : "mint22"
+    "zara"  : "mint22",
+    "zena"  : "mint22"
 }
 
 if args.release:

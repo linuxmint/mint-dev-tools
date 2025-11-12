@@ -1,0 +1,79 @@
+#!/usr/bin/python3
+"""
+Compare msgid entries between two PO files.
+Usage: python po_compare.py file1.po file2.po
+"""
+
+import sys
+import re
+
+
+def extract_msgids(filename):
+    """
+    Extract all msgid strings and their line numbers from a file.
+    Returns a dictionary: {msgid_string: line_number}
+    """
+    msgids = {}
+    pattern = re.compile(r'^\s*msgid\s+"(.*)"\s*$')
+    
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, start=1):
+                match = pattern.match(line)
+                if match:
+                    msgid_text = match.group(1)
+                    # Only store non-empty msgids (skip the header entry)
+                    if msgid_text:
+                        msgids[msgid_text] = line_num
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading '{filename}': {e}", file=sys.stderr)
+        sys.exit(1)
+    
+    return msgids
+
+
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: compare-potfiles file1.po file2.po", file=sys.stderr)
+        sys.exit(1)
+    
+    file1 = sys.argv[1]
+    file2 = sys.argv[2]
+    
+    # Extract msgids from both files
+    msgids1 = extract_msgids(file1)
+    msgids2 = extract_msgids(file2)
+    
+    # Find differences
+    only_in_file1 = set(msgids1.keys()) - set(msgids2.keys())
+    only_in_file2 = set(msgids2.keys()) - set(msgids1.keys())
+    
+    # Print results
+    if only_in_file1:
+        print(f"=== msgid entries only in {file1} ===")
+        for msgid in sorted(only_in_file1):
+            print(f"Line {msgids1[msgid]}: \"{msgid}\"")
+        print()
+    
+    if only_in_file2:
+        print(f"=== msgid entries only in {file2} ===")
+        for msgid in sorted(only_in_file2):
+            print(f"Line {msgids2[msgid]}: \"{msgid}\"")
+        print()
+    
+    if not only_in_file1 and not only_in_file2:
+        print("No differences found. Both files have the same msgid entries.")
+    
+    # Print summary
+    print(f"Summary:")
+    print(f"  Total msgids in {file1}: {len(msgids1)}")
+    print(f"  Total msgids in {file2}: {len(msgids2)}")
+    print(f"  Unique to {file1}: {len(only_in_file1)}")
+    print(f"  Unique to {file2}: {len(only_in_file2)}")
+
+
+if __name__ == "__main__":
+    main()

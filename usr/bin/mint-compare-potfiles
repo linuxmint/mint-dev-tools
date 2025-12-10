@@ -1,11 +1,17 @@
 #!/usr/bin/python3
 """
 Compare msgid entries between two PO files.
-Usage: python po_compare.py file1.po file2.po
+Usage:
+  mint-compare-potfiles                 # Auto-compare current .pot with HEAD version
+  mint-compare-potfiles file1.po file2.po  # Compare two specific files
 """
 
 import sys
 import re
+import os
+import subprocess
+import tempfile
+import glob
 
 
 def extract_msgids(filename):
@@ -15,7 +21,7 @@ def extract_msgids(filename):
     """
     msgids = {}
     pattern = re.compile(r'^\s*msgid\s+"(.*)"\s*$')
-    
+
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f, start=1):
@@ -31,27 +37,69 @@ def extract_msgids(filename):
     except Exception as e:
         print(f"Error reading '{filename}': {e}", file=sys.stderr)
         sys.exit(1)
-    
+
     return msgids
 
 
+def find_potfile():
+    pot_files = glob.glob("*.pot")
+    if not pot_files:
+        return None
+    return pot_files[0]
+
+def get_potfile_from_git(filepath):
+    try:
+        result = subprocess.run(
+            ['git', 'show', f'HEAD:{filepath}'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError:
+        return None
+
+
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: compare-potfiles file1.po file2.po", file=sys.stderr)
+    if len(sys.argv) == 1:
+        potfile = find_potfile()
+        if not potfile:
+            print("Error: No .pot file found in current directory.", file=sys.stderr)
+            sys.exit(1)
+
+        head_content = get_potfile_from_git(potfile)
+        if head_content is None:
+            print(f"Error: Could not get '{potfile}' from git HEAD.", file=sys.stderr)
+            print("Make sure you're in a git repository and the file exists in HEAD.", file=sys.stderr)
+            sys.exit(1)
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.pot', delete=False, encoding='utf-8') as temp_file:
+            temp_file.write(head_content)
+            temp_file_path = temp_file.name
+
+        msgids1 = extract_msgids(temp_file_path)
+        msgids2 = extract_msgids(potfile)
+
+        file1 = f"{potfile} (HEAD)"
+        file2 = f"{potfile} (current)"
+
+    elif len(sys.argv) == 3:
+        file1 = sys.argv[1]
+        file2 = sys.argv[2]
+
+        # Extract msgids from both files
+        msgids1 = extract_msgids(file1)
+        msgids2 = extract_msgids(file2)
+
+    else:
+        print("Usage: mint-compare-potfiles [file1.po file2.po]", file=sys.stderr)
+        print("  With no arguments: compares current .pot file with HEAD version", file=sys.stderr)
+        print("  With two arguments: compares the two specified files", file=sys.stderr)
         sys.exit(1)
-    
-    file1 = sys.argv[1]
-    file2 = sys.argv[2]
-    
-    # Extract msgids from both files
-    msgids1 = extract_msgids(file1)
-    msgids2 = extract_msgids(file2)
-    
-    # Find differences
+
     only_in_file1 = set(msgids1.keys()) - set(msgids2.keys())
     only_in_file2 = set(msgids2.keys()) - set(msgids1.keys())
-    
-    # Print results
+
     if only_in_file1:
         print(f"=== msgid entries only in {file1} ===")
         for msgid in sorted(only_in_file1):
@@ -66,13 +114,6 @@ def main():
     
     if not only_in_file1 and not only_in_file2:
         print("No differences found. Both files have the same msgid entries.")
-    
-    # Print summary
-    print(f"Summary:")
-    print(f"  Total msgids in {file1}: {len(msgids1)}")
-    print(f"  Total msgids in {file2}: {len(msgids2)}")
-    print(f"  Unique to {file1}: {len(only_in_file1)}")
-    print(f"  Unique to {file2}: {len(only_in_file2)}")
 
 
 if __name__ == "__main__":

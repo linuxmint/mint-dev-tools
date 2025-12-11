@@ -1,3 +1,11 @@
+mint-dev-tools (1.5.3) zena; urgency=medium
+
+  [ Michael Webster ]
+  * Add mint-compare-potfiles.
+  * mint-compare-potfiles: compare current state with git HEAD when no arguments are supplied.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Thu, 11 Dec 2025 14:22:42 +0000
+
 mint-dev-tools (1.5.2) zena; urgency=medium
 
   * Add support for Mint 22.3 Zena

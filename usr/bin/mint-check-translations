@@ -245,7 +245,7 @@ class Main:
             if issue_found:
                 self.add_issue_to_treeview(mo, mo.project, msgid, msgstr, res, mo.current_index)
             mo.current_index += 1
-            
+
     def check_entry(self, msgid, msgstr, is_plural=False, is_python=False):
         msgid = msgid.replace("%%", " ")
         msgstr = msgstr.replace("%%", " ")
@@ -331,7 +331,7 @@ class Main:
                                     break
             except Exception as e:
                 print("Error parsing msgstr at index %d: %s" % (idx, e))
-                
+
         for keyword in ["5%", "0%"]:
             if keyword in msgid:
                 # Ignore percentages

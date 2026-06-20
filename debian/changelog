@@ -1,3 +1,15 @@
+mint-dev-tools (1.5.4) alfa; urgency=medium
+
+  [ Clement Lefebvre ]
+  * Update manifests
+  * Add support for Mint 23 Alfa
+  * Move old manifests
+
+  [ Michael Webster ]
+  * debian/control: Add linux-perf as an alternate to perf.
+
+ -- Clement Lefebvre <root@linuxmint.com>  Sat, 20 Jun 2026 15:41:24 +0200
+
 mint-dev-tools (1.5.3) zena; urgency=medium
 
   [ Michael Webster ]

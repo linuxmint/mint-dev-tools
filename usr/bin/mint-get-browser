@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import csv
+import gzip
 import platform
 import tempfile
 import requests
@@ -13,6 +14,10 @@ from packaging.version import Version
 from gi.repository import Gio, GLib
 
 IP = "135.181.5.124"
+
+MINT_REPO_URL = "http://packages.linuxmint.com/dists/%s/upstream/binary-amd64/Packages.gz"
+MINT_REPO_RELEASES = ("alfa", "zena", "virginia", "gigi")
+MINT_REPO_APPS = ("firefox", "chromium", "thunderbird")
 
 chromium_resp = requests.get("https://chromiumdash.appspot.com/fetch_releases?num=1", timeout=30)
 chromium_json = json.loads(chromium_resp.text)
@@ -77,7 +82,7 @@ def get_thunderbird_version_json(which="esr"):
     for release_name in releases.keys():
         release = releases[release_name]
         if which == "esr":
-            if release_name.endswith("esr") and release["category"] in ("major", "stability"):
+            if release_name.endswith("esr") and release["category"] in ("major", "stability", "esr"):
                 version = Version(release["version"])
         elif which == "stable":
             if release["category"] == "stability":
@@ -90,15 +95,83 @@ def get_thunderbird_version_json(which="esr"):
             mrr = release_name
     return mrr.replace("thunderbird-", "")
 
+def get_mint_repo_versions(codename):
+    res = requests.get(MINT_REPO_URL % codename, timeout=30)
+    res.raise_for_status()
+
+    versions = {}
+    for stanza in gzip.decompress(res.content).decode("utf-8").split("\n\n"):
+        name = None
+        version = None
+        for line in stanza.split("\n"):
+            if line.startswith("Package: "):
+                name = line.split(": ", 1)[1].strip()
+            elif line.startswith("Version: "):
+                version = line.split(": ", 1)[1].strip()
+        if name in MINT_REPO_APPS and version is not None:
+            # 1:153.1.0esr+linuxmint1+zena -> 153.1.0esr
+            version = version.rpartition(":")[2]
+            versions[name] = version.split("+linuxmint")[0].split("~linuxmint")[0]
+    return versions
+
+def is_behind(published, latest):
+    try:
+        return Version(published.replace("esr", "")) < Version(latest.replace("esr", ""))
+    except Exception:
+        return published != latest
+
+def get_repo_status(published, latest):
+    if published == latest:
+        return "up-to-date"
+    if is_behind(published, latest):
+        return "behind %s" % latest
+    return "ahead of %s" % latest
+
+def print_mint_repo_report(latest):
+    published = {}
+    for codename in MINT_REPO_RELEASES:
+        try:
+            published[codename] = get_mint_repo_versions(codename)
+        except Exception as e:
+            print("Could not read the %s repo: %s" % (codename, e))
+
+    rows = []
+    for app in MINT_REPO_APPS:
+        releases = {}
+        for codename in MINT_REPO_RELEASES:
+            version = published.get(codename, {}).get(app)
+            if version is not None:
+                releases.setdefault(version, []).append(codename)
+
+        label = app
+        for version, codenames in releases.items():
+            rows.append(("    %-12s %s (%s)" % (label, version, ", ".join(codenames)),
+                         get_repo_status(version, latest[app])))
+            label = ""
+
+    width = max([len(text) for text, status in rows], default=0)
+    print("Published in Mint's repos:")
+    print("")
+    for text, status in rows:
+        print("%s   <-- %s" % (text.ljust(width), status))
+    print("")
+
+latest = {
+    "firefox": get_firefox_version_json("stable"),
+    "chromium": get_chromium_version("stable"),
+    "thunderbird": get_thunderbird_version_json("esr")
+}
+
 print("")
-print("Current STABLE Firefox version is %s" % get_firefox_version_json("stable"))
+print("Current STABLE Firefox version is %s" % latest["firefox"])
 print("Current BETA Firefox version is %s" % get_firefox_version_json("beta"))
 print("")
-print("Current STABLE Chromium version is %s" % get_chromium_version("stable"))
+print("Current STABLE Chromium version is %s" % latest["chromium"])
 print("Current BETA Chromium version is %s" % get_chromium_version("beta"))
 print("")
-print("Current LTS Thunderbird version is %s" % get_thunderbird_version_json("esr"))
+print("Current LTS Thunderbird version is %s" % latest["thunderbird"])
 print("")
+print_mint_repo_report(latest)
 
 parser = argparse.ArgumentParser(description="Download and install an application for testing")
 parser.add_argument("app", metavar="firefox|chromium|thunderbird", type=str, help="Specify an application", nargs=1)

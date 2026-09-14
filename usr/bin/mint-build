@@ -4,28 +4,32 @@ import sys
 import os
 import tempfile
 import argparse
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+
+console = Console()
+
+
+def heading(title):
+    console.print()
+    console.print(Panel.fit(Text(title, style="bold cyan"), border_style="cyan"))
+    console.print()
 
 def call(command):
     return_code = os.system(command)
     if return_code != 0:
-        print("ERROR: '%s' exited with return code %d" % (command, return_code))
+        console.print("[bold red]Command failed[/bold red] (exit code %d)" % return_code)
+        console.print(Panel(Text(command), border_style="red"))
         sys.exit(1)
 
 def install():
-    print("")
-    print("   #######################################################################")
-    print("   ### Installing")
-    print("   #######################################################################")
-    print("")
+    heading("Installing packages")
     call("sudo apt install --yes --allow-downgrades ../*.deb || sudo dpkg -i ../*.deb")
 
 
 def bash():
-    print("")
-    print("   #######################################################################")
-    print("   ### Bash")
-    print("   #######################################################################")
-    print("")
+    heading("Bash shell")
     call("bash")
 
 def build(suffix):
@@ -33,39 +37,21 @@ def build(suffix):
         call("mv debian/changelog.orig debian/changelog")
 
     if (suffix is not None):
-        print("")
-        print("   #######################################################################")
-        print("   ### Adding suffix '%s'" % suffix)
-        print("   #######################################################################")
-        print("")
+        heading("Adding suffix '%s'" % suffix)
         call("cp debian/changelog debian/changelog.orig")
         call("sed -i '0,/)/s/)/%s)/' debian/changelog" % suffix)
-        print("")
 
-    print("")
-    print("   #######################################################################")
-    print("   ### Downloading build dependencies")
-    print("   #######################################################################")
-    print("")
+    heading("Downloading build dependencies")
     call("sudo DEBIAN_FRONTEND=noninteractive mk-build-deps -i -r -t 'apt-get -y' debian/control")
-    print("")
 
-    print("")
-    print("   #######################################################################")
-    print("   ### Building")
-    print("   #######################################################################")
-    print("")
+    heading("Building packages")
     call("dpkg-buildpackage -us -uc")
 
     if os.path.exists("debian/changelog.orig"):
         call("mv debian/changelog.orig debian/changelog")
 
 def copy_debs(deb_dir):
-    print("")
-    print("   #######################################################################")
-    print("   ### Moving debs to %s" % deb_dir)
-    print("   #######################################################################")
-    print("")
+    heading("Moving packages to %s" % deb_dir)
     os.makedirs(deb_dir, exist_ok=True)
     os.system('cp ../*.deb %s' % deb_dir)
 
@@ -111,11 +97,7 @@ if args.git_repository is not None:
         if os.path.exists(project_name):
             call("rm -rf '%s'" % project_name)
 
-    print("")
-    print("   #######################################################################")
-    print("   ### Cloning %s (branch/tag: %s)" % (project_name, tag_branch))
-    print("   #######################################################################")
-    print("")
+    heading("Cloning %s (branch/tag: %s)" % (project_name, tag_branch))
     call("git clone %s" % project_url)
     os.chdir(project_name)
 

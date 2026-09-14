@@ -72,7 +72,7 @@ for distribution in distributions:
         commands.append("apt-get update")
         if args.update:
             commands.append("apt-get dist-upgrade --yes")
-        commands.append("apt-get install --yes openssh-client")
+        commands.append("apt-get install --yes openssh-client python3-rich")
         for repository in repositories:
             if args.bash:
                 mintbuild = "mint-build -b -g %s" % repository

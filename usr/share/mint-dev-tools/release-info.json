@@ -1,11 +1,12 @@
 {
-    "mint_repo_releases": ["alfa", "zena", "virginia", "gigi"],
+    "mint_repo_releases": ["adrien", "zena", "virginia", "gigi"],
     "releases": {
         "lmde1": "debian", "lmde2": "betsy", "lmde3": "cindy", "lmde4": "debbie", "lmde5": "elsie", "lmde6": "faye", "lmde7": "gigi",
         "mint18": "sarah", "mint18.1": "serena", "mint18.2": "sonya", "mint18.3": "sylvia", 
         "mint19": "tara", "mint19.1": "tessa", "mint19.2": "tina", "mint19.3": "tricia",
         "mint20": "ulyana", "mint20.1": "ulyssa", "mint20.2": "uma", "mint20.3": "una",
         "mint21": "vanessa", "mint21.1": "vera", "mint21.2": "victoria", "mint21.3": "virginia",
-        "mint22": "wilma", "mint22.1": "xia", "mint22.2": "zara", "mint22.3": "zena", "mint23": "alfa"
+        "mint22": "wilma", "mint22.1": "xia", "mint22.2": "zara", "mint22.3": "zena",
+        "mint23": "alfa", "mint27": "adrien"
     }
 }

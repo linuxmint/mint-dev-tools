@@ -8,8 +8,7 @@ import json
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
 
-lmde_releases = release_info["lmde_releases"]
-mint_releases = release_info["mint_releases"]
+releases = release_info["releases"]
 
 class Package:
 
@@ -23,7 +22,8 @@ class Release:
     def __init__(self, name):
         self.name = name
         self.packages = []
-        self.is_lmde = (name in lmde_releases)
+        self.is_lmde = any(distribution.startswith("lmde") and codename == name
+                           for distribution, codename in releases.items())
 
 
 def read_list(filename):
@@ -38,8 +38,8 @@ def read_list(filename):
 
 
 def remove_version_suffix(version):
-    for release in (lmde_releases + mint_releases):
-        version = version.replace("+%s" % release, "")
+    for codename in releases.values():
+        version = version.replace("+%s" % codename, "")
     return version
 
 lmde_specific_packages = read_list("/usr/share/mint-dev-tools/packages/lmde.list")

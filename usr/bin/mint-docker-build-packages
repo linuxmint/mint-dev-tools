@@ -8,7 +8,7 @@ import json
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
 
-suffixes = release_info["release_suffixes"]
+suffixes = release_info["releases"]
 only_64bit_releases = release_info["only_64bit_releases"]
 archs = ["i386", "amd64"]
 

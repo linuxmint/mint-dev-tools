@@ -9,8 +9,6 @@ with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
 
 suffixes = release_info["releases"]
-only_64bit_releases = release_info["only_64bit_releases"]
-archs = ["amd64", "i386"]
 
 def call(command, exit_on_failure=True):
     return_code = os.system(command)
@@ -48,9 +46,12 @@ if os.path.exists(ssh_dir):
     ssh_options = "-v %s:/host_ssh" % ssh_dir
 
 for distribution in distributions:
+    if ((distribution.startswith("mint") and float(distribution[4:]) >= 20) or
+            (distribution.startswith("lmde") and float(distribution[4:]) >= 7)):
+        archs = ["amd64"]
+    else:
+        archs = ["amd64", "i386"]
     for arch in archs:
-        if arch == "i386" and distribution in only_64bit_releases:
-            continue
         docker_image = "linuxmintd/%s-%s" % (distribution, arch)
         container = "mintbuild-%s-%s" % (distribution, arch)
         print("---------------------------------------------")

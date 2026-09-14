@@ -9,8 +9,6 @@ with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
 
 suffixes = release_info["releases"]
-only_64bit_releases = release_info["only_64bit_releases"]
-archs = ["i386", "amd64"]
 
 def call(command, exit_on_failure=True):
     return_code = os.system(command)
@@ -36,9 +34,12 @@ if args.git_repositories is not None:
     repositories = args.git_repositories.split(",")
     for repository in repositories:
         for distribution in distributions:
+            if ((distribution.startswith("mint") and float(distribution[4:]) >= 20) or
+                    (distribution.startswith("lmde") and float(distribution[4:]) >= 7)):
+                archs = ["amd64"]
+            else:
+                archs = ["i386", "amd64"]
             for arch in archs:
-                if arch == "i386" and distribution in only_64bit_releases:
-                    continue
                 docker_image = "linuxmintd/%s-%s" % (distribution, arch)
                 cmd = "mint-docker-build -i %s" % docker_image
                 if not args.without_suffix:
@@ -46,9 +47,12 @@ if args.git_repositories is not None:
                 os.system("%s -g %s" % (cmd, repository))
 else:
     for distribution in distributions:
+        if ((distribution.startswith("mint") and float(distribution[4:]) >= 20) or
+                (distribution.startswith("lmde") and float(distribution[4:]) >= 7)):
+            archs = ["amd64"]
+        else:
+            archs = ["i386", "amd64"]
         for arch in archs:
-            if arch == "i386" and distribution in only_64bit_releases:
-                continue
             docker_image = "linuxmintd/%s-%s" % (distribution, arch)
             cmd = "mint-docker-build -i %s" % docker_image
             if not args.without_suffix:

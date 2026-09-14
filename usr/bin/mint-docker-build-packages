@@ -4,6 +4,11 @@ import sys
 import os
 import argparse
 import json
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+
+console = Console()
 
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
@@ -13,7 +18,8 @@ suffixes = release_info["releases"]
 def call(command, exit_on_failure=True):
     return_code = os.system(command)
     if return_code != 0 and exit_on_failure:
-        print("ERROR: '%s' exited with return code %d" % (command, return_code))
+        console.print("[bold red]Build failed[/bold red] (exit code %d)" % return_code)
+        console.print(Panel(Text(command), border_style="red"))
         sys.exit(1)
 
 parser = argparse.ArgumentParser(description='Build packages via Docker')
@@ -41,6 +47,7 @@ if args.git_repositories is not None:
                 archs = ["i386", "amd64"]
             for arch in archs:
                 docker_image = "linuxmintd/%s-%s" % (distribution, arch)
+                console.rule("[bold cyan]%s[/bold cyan] [dim]·[/dim] %s" % (repository, docker_image))
                 cmd = "mint-docker-build -i %s" % docker_image
                 if not args.without_suffix:
                     cmd = "%s -s +%s" % (cmd, suffixes[distribution])
@@ -54,6 +61,7 @@ else:
             archs = ["i386", "amd64"]
         for arch in archs:
             docker_image = "linuxmintd/%s-%s" % (distribution, arch)
+            console.rule("[bold cyan]%s[/bold cyan]" % docker_image)
             cmd = "mint-docker-build -i %s" % docker_image
             if not args.without_suffix:
                 cmd = "%s -s +%s" % (cmd, suffixes[distribution])

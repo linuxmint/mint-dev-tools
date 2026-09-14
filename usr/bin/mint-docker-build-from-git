@@ -4,6 +4,11 @@ import sys
 import os
 import argparse
 import json
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+
+console = Console()
 
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
@@ -13,7 +18,8 @@ suffixes = release_info["releases"]
 def call(command, exit_on_failure=True):
     return_code = os.system(command)
     if return_code != 0 and exit_on_failure:
-        print("ERROR: '%s' exited with return code %d" % (command, return_code))
+        console.print("[bold red]Build failed[/bold red] (exit code %d)" % return_code)
+        console.print(Panel(Text(command), border_style="red"))
         sys.exit(1)
 
 parser = argparse.ArgumentParser(description='Build packages via Docker')
@@ -54,9 +60,7 @@ for distribution in distributions:
     for arch in archs:
         docker_image = "linuxmintd/%s-%s" % (distribution, arch)
         container = "mintbuild-%s-%s" % (distribution, arch)
-        print("---------------------------------------------")
-        print(" CONTAINER: %s" % container)
-        print("---------------------------------------------")
+        console.rule("[bold cyan]%s[/bold cyan] [dim]·[/dim] %s" % (container, docker_image))
 
         # Build commands (to be run in docker)
         commands = []
@@ -103,9 +107,7 @@ for distribution in distributions:
         #os.system("sudo chown -R `whoami`:`whoami` %s" % output_directory)
 
         for command in commands:
-            print("---------------------------------------------")
-            print(" RUNNING: %s" % command)
-            print("---------------------------------------------")
+            console.print(Panel(Text(command), title="[bold cyan]Running[/bold cyan]", border_style="cyan"))
             call("docker exec -e COLUMNS=\"`tput cols`\" -e LINES=\"`tput lines`\" -it %s /bin/sh -c \"%s\"" % (container, command))
 
 # Clean up

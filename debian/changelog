@@ -1,3 +1,19 @@
+mint-dev-tools (1.5.6) adrien; urgency=medium
+
+  [ Michael Webster ]
+  * mint-get-browser: Fix thunderbird lookup again, add published packages check at startup.
+  * debian/control: Add manpages-dev/posix-dev to recommends.
+
+  [ Clement Lefebvre ]
+  * Move release info to json
+  * Simplify release info
+  * Simplify amd64-only builds
+  * Make the CLI output rich
+  * Add support for Mint 27 Adrien
+  * mint-build: Make output rich
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 14 Sep 2026 15:44:56 +0100
+
 mint-dev-tools (1.5.5) alfa; urgency=medium
 
   [ Michael Webster ]

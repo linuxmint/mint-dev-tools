@@ -16,7 +16,8 @@ from gi.repository import Gio, GLib
 IP = "135.181.5.124"
 
 MINT_REPO_URL = "http://packages.linuxmint.com/dists/%s/upstream/binary-amd64/Packages.gz"
-MINT_REPO_RELEASES = ("alfa", "zena", "virginia", "gigi")
+with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
+    MINT_REPO_RELEASES = json.load(file_handle)["mint_repo_releases"]
 MINT_REPO_APPS = ("firefox", "chromium", "thunderbird")
 
 chromium_resp = requests.get("https://chromiumdash.appspot.com/fetch_releases?num=1", timeout=30)

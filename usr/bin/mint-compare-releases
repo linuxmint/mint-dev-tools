@@ -3,9 +3,13 @@
 import os
 import sys
 import subprocess
+import json
 
-lmde_releases = ['debian', 'betsy', 'cindy', 'debbie', 'elsie', 'faye', 'gigi']
-mint_releases = ['maya', 'qiana', 'rebecca', 'rafaela', 'rosa', 'sarah', 'serena', 'sonya', 'tara', 'tessa', 'tina', 'tricia', 'ulyana', 'ulyssa', 'uma', 'una', 'vanessa', 'vera', 'victoria', 'virginia', 'wilma', 'xia', 'zara', 'zena', 'alfa']
+with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
+    release_info = json.load(file_handle)
+
+lmde_releases = release_info["lmde_releases"]
+mint_releases = release_info["mint_releases"]
 
 class Package:
 

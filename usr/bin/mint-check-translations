@@ -263,6 +263,11 @@ class Main:
                     if idx > 1 and msgid[idx-1] == " " and msgid[idx-2] in DIGITS:
                         # ignore this token, it's probably a percentage
                         continue
+                    if idx == 0 and len(msgid) == 1: 
+                       # Handle entries consisting solely of '%' to avoid
+                       # indexing beyond the end of the string while parsing
+                       # formatting placeholders.
+                       continue
                     if idx > -1 and msgid[idx-1] != "\\":
                         subidx = 0
                         if msgid[idx+1] == "(":
@@ -297,6 +302,11 @@ class Main:
                     if idx > 1 and msgstr[idx-1] == " " and msgstr[idx-2] in DIGITS:
                         # ignore this token, it's probably a percentage
                         continue
+                    if idx == 0 and len(msgstr) == 1: 
+                       # Handle entries consisting solely of '%' to avoid
+                       # indexing beyond the end of the string while parsing
+                       # formatting placeholders.
+                       continue
                     if idx > -1 and msgstr[idx-1] != "\\":
                         subidx = 0
                         if msgstr[idx+1] == "(":

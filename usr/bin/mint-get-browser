@@ -17,7 +17,11 @@ IP = "135.181.5.124"
 
 MINT_REPO_URL = "http://packages.linuxmint.com/dists/%s/upstream/binary-amd64/Packages.gz"
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
-    MINT_REPO_RELEASES = json.load(file_handle)["mint_repo_releases"]
+    release_info = json.load(file_handle)
+
+MINT_REPO_RELEASES = tuple(release_info["mint_repo_releases"])
+RELEASES = release_info["releases"]
+CODENAME_TO_RELEASE = {info["codename"]: name for name, info in RELEASES.items()}
 MINT_REPO_APPS = ("firefox", "chromium", "thunderbird")
 
 chromium_resp = requests.get("https://chromiumdash.appspot.com/fetch_releases?num=1", timeout=30)
@@ -205,38 +209,6 @@ elif app == "thunderbird":
 else:
     version = args.version
 
-firefox_mint_to_ubuntu = {
-    "alfa"   : "resolute",
-    "zena"   : "noble",
-    "zara"   : "noble",
-    "xia"   : "noble",
-    "wilma" : "noble",
-    "virginia" : "jammy",
-    "victoria" : "jammy",
-    "vera" : "jammy",
-    "vanessa" : "jammy",
-    "una" : "focal",
-    "uma" : "focal",
-    "tricia" : "bionic"
-}
-
-chromium_codename_to_image_map = {
-    "gigi" : "lmde7",
-    "faye" : "lmde6",
-    "elsie" : "lmde5",
-    "debbie" : "lmde4",
-    "una" : "mint20",
-    "vera": "mint21",
-    "virginia": "mint21",
-    "victoria": "mint21",
-    "vanessa": "mint21",
-    "wilma": "mint22",
-    "xia"  : "mint22",
-    "zara"  : "mint22",
-    "zena"  : "mint22",
-    "alfa"  : "mint23"
-}
-
 if args.release:
     codename = args.release
 else:
@@ -250,6 +222,19 @@ else:
     except KeyError:
         print("Autodetected codename not valid, provide one using -r")
         sys.exit(1)
+
+if codename not in CODENAME_TO_RELEASE:
+    print("Unknown release '%s'" % codename)
+    sys.exit(1)
+
+release = CODENAME_TO_RELEASE[codename]
+base = RELEASES[release].get("base")
+image = release.split(".")[0]
+is_lmde = release.startswith("lmde")
+
+if base is None:
+    print("No base distro recorded for %s (%s)" % (codename, release))
+    sys.exit(1)
 
 arch_info = platform.architecture()
 
@@ -268,32 +253,27 @@ success = False
 
 for suffix, release_id in (("", args.buildid), ("-beta", "beta")):
     if app == "firefox":
-        if codename in firefox_mint_to_ubuntu.keys():
-            root_folder = "firefox-mint%s" % suffix
-            path_to_tar = os.path.join(root_folder, "firefox_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
-            tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
-            tarpath = os.path.join(path_to_tar, tarfile)
-        elif codename in chromium_codename_to_image_map.keys():
-            root_folder = "firefox-lmde%s" % suffix
-            path_to_tar = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_codename_to_image_map[codename], arch))
+        if is_lmde:
+            path_to_tar = os.path.join("firefox-lmde%s" % suffix, "linuxmintd_%s-%s" % (image, arch))
             tarfile = "bundle-%s~%s+%s_%s.tar" % (version, release_id, codename, arch)
-            tarpath = os.path.join(path_to_tar, tarfile)
+        else:
+            path_to_tar = os.path.join("firefox-mint%s" % suffix, "firefox_%s-%s" % (base, arch))
+            tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
+        tarpath = os.path.join(path_to_tar, tarfile)
 
     elif app == "thunderbird":
-        if codename in firefox_mint_to_ubuntu.keys():
-            root_folder = "thunderbird-mint%s" % suffix
-            path_to_tar = os.path.join(root_folder, "thunderbird_%s-%s" % (firefox_mint_to_ubuntu[codename], arch))
-            tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
-            tarpath = os.path.join(path_to_tar, tarfile)
+        if is_lmde:
+            print("Thunderbird is not built for LMDE (%s)" % codename)
+            sys.exit(1)
+        path_to_tar = os.path.join("thunderbird-mint%s" % suffix, "thunderbird_%s-%s" % (base, arch))
+        tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
+        tarpath = os.path.join(path_to_tar, tarfile)
 
     elif app == "chromium":
-        root_folder = "chromium%s" % suffix
-        if codename in chromium_codename_to_image_map.keys():
-            if arch == "i386":
-                root_folder = "chromium-lmde"
-            path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (chromium_codename_to_image_map[codename], arch))
-            deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
-            deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+        root_folder = "chromium-lmde" if arch == "i386" else "chromium%s" % suffix
+        path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (image, arch))
+        deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
 
     with tempfile.TemporaryDirectory() as dirname:
         def call(command):

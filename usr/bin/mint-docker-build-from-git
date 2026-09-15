@@ -13,7 +13,7 @@ console = Console()
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
 
-suffixes = release_info["releases"]
+suffixes = {name: info["codename"] for name, info in release_info["releases"].items()}
 
 def call(command, exit_on_failure=True):
     return_code = os.system(command)

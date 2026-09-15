@@ -8,7 +8,7 @@ import json
 with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
     release_info = json.load(file_handle)
 
-releases = release_info["releases"]
+releases = {name: info["codename"] for name, info in release_info["releases"].items()}
 
 class Package:
 

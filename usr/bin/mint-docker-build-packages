@@ -3,17 +3,11 @@
 import sys
 import os
 import argparse
-import json
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
 console = Console()
-
-with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
-    release_info = json.load(file_handle)
-
-suffixes = {name: info["codename"] for name, info in release_info["releases"].items()}
 
 def call(command, exit_on_failure=True):
     return_code = os.system(command)
@@ -50,7 +44,7 @@ if args.git_repositories is not None:
                 console.rule("[bold cyan]%s[/bold cyan] [dim]·[/dim] %s" % (repository, docker_image))
                 cmd = "mint-docker-build -i %s" % docker_image
                 if not args.without_suffix:
-                    cmd = "%s -s +%s" % (cmd, suffixes[distribution])
+                    cmd = "%s -s +%s" % (cmd, distribution)
                 os.system("%s -g %s" % (cmd, repository))
 else:
     for distribution in distributions:
@@ -64,7 +58,7 @@ else:
             console.rule("[bold cyan]%s[/bold cyan]" % docker_image)
             cmd = "mint-docker-build -i %s" % docker_image
             if not args.without_suffix:
-                cmd = "%s -s +%s" % (cmd, suffixes[distribution])
+                cmd = "%s -s +%s" % (cmd, distribution)
             os.system(cmd)
 
 os.chdir("docker-output")

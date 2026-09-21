@@ -3,17 +3,11 @@
 import sys
 import os
 import argparse
-import json
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
 console = Console()
-
-with open("/usr/share/mint-dev-tools/release-info.json") as file_handle:
-    release_info = json.load(file_handle)
-
-suffixes = {name: info["codename"] for name, info in release_info["releases"].items()}
 
 def call(command, exit_on_failure=True):
     return_code = os.system(command)
@@ -79,7 +73,7 @@ for distribution in distributions:
             else:
                 mintbuild = "mint-build -g %s" % repository
             if not args.without_suffix:
-                mintbuild = "%s -s +%s" % (mintbuild, suffixes[distribution])
+                mintbuild = "%s -s +%s" % (mintbuild, distribution)
             if not args.without_install:
                 mintbuild = f"{mintbuild} -i"
             # If only a name is given, assume the URL is on Linux Mint's github

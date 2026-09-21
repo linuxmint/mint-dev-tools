@@ -1,3 +1,13 @@
+mint-dev-tools (1.5.8) adrien; urgency=medium
+
+  [ Michael Webster ]
+  * dpkg-deb: Quote "$@" in the wrapper.
+
+  [ Clement Lefebvre ]
+  * suffixes: Use Mint version instead of codename
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 21 Sep 2026 17:49:33 +0100
+
 mint-dev-tools (1.5.7) adrien; urgency=medium
 
   [ Michael Webster ]

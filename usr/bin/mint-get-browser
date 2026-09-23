@@ -33,6 +33,9 @@ firefox_json = json.loads(firefox_resp.text)
 thunderbird_resp = requests.get("https://product-details.mozilla.org/1.0/thunderbird.json", timeout=30)
 thunderbird_json = json.loads(thunderbird_resp.text)
 
+def get_release_label(codename):
+    return CODENAME_TO_RELEASE.get(codename, codename)
+
 def get_chromium_version(which="stable"):
         if which not in ("stable", "beta"):
             return None
@@ -146,11 +149,11 @@ def print_mint_repo_report(latest):
         for codename in MINT_REPO_RELEASES:
             version = published.get(codename, {}).get(app)
             if version is not None:
-                releases.setdefault(version, []).append(codename)
+                releases.setdefault(version, []).append(get_release_label(codename))
 
         label = app
-        for version, codenames in releases.items():
-            rows.append(("    %-12s %s (%s)" % (label, version, ", ".join(codenames)),
+        for version, labels in releases.items():
+            rows.append(("    %-12s %s (%s)" % (label, version, ", ".join(labels)),
                          get_repo_status(version, latest[app])))
             label = ""
 
@@ -181,7 +184,7 @@ print_mint_repo_report(latest)
 parser = argparse.ArgumentParser(description="Download and install an application for testing")
 parser.add_argument("app", metavar="firefox|chromium|thunderbird", type=str, help="Specify an application", nargs=1)
 parser.add_argument("-v", "--version", type=str, help="Specify a version or 'stable', 'beta' or 'esr' ('stable' is the default for all but Thunderbird, which is 'esr'")
-parser.add_argument("-r", "--release", type=str, help="Specify a Mint release like vera or una (default is taken from host)")
+parser.add_argument("-r", "--release", type=str, help="Specify a Mint release like mint27 or vera (default is taken from host)")
 parser.add_argument("-b", "--buildid", type=str, help="Build ID (linuxmint1, etc...) Defaults to linuxmint1", default="linuxmint1")
 args = parser.parse_args()
 
@@ -210,7 +213,7 @@ else:
     version = args.version
 
 if args.release:
-    codename = args.release
+    target = args.release
 else:
     os_release = {}
     with open("/etc/os-release") as f:
@@ -218,23 +221,22 @@ else:
         os_release = dict(reader)
 
     try:
-        codename = os_release["VERSION_CODENAME"]
+        target = os_release["VERSION_CODENAME"]
     except KeyError:
         print("Autodetected codename not valid, provide one using -r")
         sys.exit(1)
 
-if codename not in CODENAME_TO_RELEASE:
-    print("Unknown release '%s'" % codename)
+if target in CODENAME_TO_RELEASE:
+    release = CODENAME_TO_RELEASE[target]
+elif target in RELEASES:
+    release = target
+else:
+    print("Unknown release '%s'" % target)
     sys.exit(1)
 
-release = CODENAME_TO_RELEASE[codename]
-base = RELEASES[release].get("base")
+codename = RELEASES[release]["codename"]
 image = release.split(".")[0]
 is_lmde = release.startswith("lmde")
-
-if base is None:
-    print("No base distro recorded for %s (%s)" % (codename, release))
-    sys.exit(1)
 
 arch_info = platform.architecture()
 
@@ -251,29 +253,33 @@ deb_dbg = None
 
 success = False
 
-for suffix, release_id in (("", args.buildid), ("-beta", "beta")):
+# Firefox and Thunderbird are 'universal' builds: one package per version for every
+# Mint release (and one for every LMDE release), so no release suffix in the name.
+for suffix, is_beta in (("", False), ("-beta", True)):
     if app == "firefox":
+        path_to_tar = os.path.join("firefox-%s-universal%s" % ("lmde" if is_lmde else "mint", suffix), "universal-%s" % arch)
         if is_lmde:
-            path_to_tar = os.path.join("firefox-lmde%s" % suffix, "linuxmintd_%s-%s" % (image, arch))
-            tarfile = "bundle-%s~%s+%s_%s.tar" % (version, release_id, codename, arch)
+            tarfile = "bundle-%s~%s+lmde_%s.tar" % (version, args.buildid, arch)
         else:
-            path_to_tar = os.path.join("firefox-mint%s" % suffix, "firefox_%s-%s" % (base, arch))
-            tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
+            tarfile = "bundle-%s+%s_%s.tar" % (version, args.buildid, arch)
         tarpath = os.path.join(path_to_tar, tarfile)
 
     elif app == "thunderbird":
         if is_lmde:
             print("Thunderbird is not built for LMDE (%s)" % codename)
             sys.exit(1)
-        path_to_tar = os.path.join("thunderbird-mint%s" % suffix, "thunderbird_%s-%s" % (base, arch))
-        tarfile = "bundle-%s+%s+%s_%s.tar" % (version, release_id, codename, arch)
+        if is_beta:
+            continue
+        path_to_tar = os.path.join("thunderbird-mint-universal", "universal-%s" % arch)
+        tarfile = "bundle-%s+%s_%s.tar" % (version, args.buildid, arch)
         tarpath = os.path.join(path_to_tar, tarfile)
 
     elif app == "chromium":
+        release_id = "beta" if is_beta else args.buildid
         root_folder = "chromium-lmde" if arch == "i386" else "chromium%s" % suffix
         path_to_debs = os.path.join(root_folder, "linuxmintd_%s-%s" % (image, arch))
-        deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
-        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, codename, arch))
+        deb = os.path.join(path_to_debs, "chromium_%s~%s+%s_%s.deb" % (version, release_id, release, arch))
+        deb_dbg = os.path.join(path_to_debs, "chromium-dbg_%s~%s+%s_%s.deb" % (version, release_id, release, arch))
 
     with tempfile.TemporaryDirectory() as dirname:
         def call(command):

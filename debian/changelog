@@ -1,3 +1,13 @@
+mint-dev-tools (1.5.9) adrien; urgency=medium
+
+  [ Michael Webster ]
+  * mint-get-browser: Adapt to new suffix conventions.
+
+  [ Harsh Sharma ]
+  * Handle lone '%' translation strings without parser exceptions - fixes issue #28 (#29)
+
+ -- Clement Lefebvre <root@linuxmint.com>  Tue, 13 Oct 2026 15:01:41 +0100
+
 mint-dev-tools (1.5.8) adrien; urgency=medium
 
   [ Michael Webster ]

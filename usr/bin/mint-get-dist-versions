@@ -1,0 +1,194 @@
+#!/usr/bin/python3
+
+import argparse
+import gzip
+import json
+import sys
+import time
+import urllib.parse
+
+import apt_pkg
+import requests
+from rich.console import Console
+from rich.table import Table
+
+API_URL = "https://repology.org/api/v1/project/%s"
+RESOLVE_URL = "https://repology.org/tools/project-by?repo=%s&name_type=%s&name=%s&target_page=api_v1_project"
+USER_AGENT = "mint-get-dist-versions (+https://github.com/linuxmint/mint-dev-tools)"
+DEFAULT_FAMILIES = ("mint", "lmde", "debian", "ubuntu", "fedora", "arch")
+MINT_SOURCES_URL = "http://packages.linuxmint.com/dists/%s/%s/source/Sources.gz"
+MINT_COMPONENTS = ("main", "upstream", "import", "backport")
+RELEASE_INFO_PATH = "/usr/share/mint-dev-tools/release-info.json"
+DEBIAN_LOOKUPS = (("debian_unstable", "srcname"), ("debian_unstable", "binname"))
+OTHER_LOOKUPS = (("arch", "binname"), ("fedora_rawhide", "srcname"))
+REQUEST_INTERVAL = 1.0
+
+session = requests.Session()
+session.headers["User-Agent"] = USER_AGENT
+last_request = 0.0
+
+def get(url, **kwargs):
+    global last_request
+    wait = REQUEST_INTERVAL - (time.monotonic() - last_request)
+    if wait > 0:
+        time.sleep(wait)
+    response = session.get(url, timeout=30, **kwargs)
+    last_request = time.monotonic()
+    if response.status_code != 404 and not response.is_redirect:
+        response.raise_for_status()
+    return response
+
+def fetch_project(name):
+    response = get(API_URL % urllib.parse.quote(name, safe=""))
+    if response.status_code == 404:
+        return None
+    return response.json() or None
+
+def resolve_project(name, lookups):
+    for repo, name_type in lookups:
+        response = get(RESOLVE_URL % (repo, name_type, urllib.parse.quote(name, safe="")), allow_redirects=False)
+        if response.is_redirect:
+            return response.headers["Location"].rsplit("/", 1)[-1]
+    return None
+
+def find_packages(name):
+    project = resolve_project(name, DEBIAN_LOOKUPS)
+    if project is None:
+        packages = fetch_project(name)
+        if packages:
+            return packages
+        project = resolve_project(name, OTHER_LOOKUPS)
+        if project is None:
+            return []
+    return fetch_project(project) or []
+
+def mint_releases():
+    with open(RELEASE_INFO_PATH) as file_handle:
+        release_info = json.load(file_handle)
+    releases = []
+    for name, info in release_info["releases"].items():
+        if info["codename"] in release_info["mint_repo_releases"]:
+            family = "lmde" if name.startswith("lmde") else "mint"
+            releases.append((family, name[4:], info["codename"], info["base"]))
+    return releases
+
+def mint_sources(codename, component):
+    response = requests.get(MINT_SOURCES_URL % (codename, component), timeout=30)
+    response.raise_for_status()
+    for stanza in gzip.decompress(response.content).decode("utf-8").split("\n\n"):
+        fields = {}
+        for line in stanza.split("\n"):
+            if ": " in line and not line.startswith(" "):
+                key, value = line.split(": ", 1)
+                fields[key] = value.strip()
+        if "Package" in fields:
+            yield fields
+
+def find_mint_package(codename, names):
+    best = None
+    for component in MINT_COMPONENTS:
+        for fields in mint_sources(codename, component):
+            binaries = [binary.strip() for binary in fields.get("Binary", "").split(",")]
+            if fields["Package"] not in names and not names.intersection(binaries):
+                continue
+            if best is None or apt_pkg.version_compare(fields["Version"], best[1]) > 0:
+                best = (fields["Package"], fields["Version"], component)
+    return best
+
+def mint_rows(names):
+    rows = []
+    for family, release, codename, base in mint_releases():
+        found = find_mint_package(codename, names)
+        label = "%s (%s)" % (release, codename)
+        if found is None:
+            rows.append((family, label, "", "", "base: %s" % base))
+        else:
+            rows.append((family, label, found[0], found[1], found[2]))
+    return sorted(rows, key=sort_key)
+
+def repo_family(repo):
+    return repo.split("_", 1)[0]
+
+def repo_release(repo):
+    parts = repo.split("_", 1)
+    return parts[1].replace("_", ".") if len(parts) > 1 else ""
+
+def release_sort_key(release):
+    try:
+        return (0, tuple(int(part) for part in release.split(" ")[0].split(".")), "")
+    except ValueError:
+        return (1, (), release)
+
+def sort_key(row):
+    family, release, srcname = row[:3]
+    try:
+        family_order = DEFAULT_FAMILIES.index(family)
+    except ValueError:
+        family_order = len(DEFAULT_FAMILIES)
+    return (family_order, family, release_sort_key(release), srcname)
+
+def wanted(repo, show_all):
+    return show_all or repo_family(repo) in DEFAULT_FAMILIES
+
+def collect_rows(packages, show_all):
+    best = {}
+    for package in packages:
+        repo = package["repo"]
+        if not wanted(repo, show_all):
+            continue
+        srcname = package.get("srcname") or package.get("binname") or package.get("visiblename", "")
+        key = (repo, srcname)
+        current = best.get(key)
+        if current is None or apt_pkg.version_compare(package["version"], current["version"]) > 0:
+            best[key] = package
+    rows = []
+    for (repo, srcname), package in best.items():
+        rows.append((repo_family(repo), repo_release(repo), srcname, package["version"], package.get("status", "")))
+    return sorted(rows, key=sort_key)
+
+def debian_names(packages):
+    names = set()
+    for package in packages:
+        if repo_family(package["repo"]) in ("debian", "ubuntu"):
+            names.update(filter(None, (package.get("srcname"), package.get("binname"))))
+    return names
+
+STATUS_STYLES = {
+    "newest": "green",
+    "devel": "cyan",
+    "outdated": "yellow",
+    "legacy": "dim",
+}
+
+def print_table(title, rows):
+    table = Table(title=title)
+    table.add_column("Distro")
+    table.add_column("Release")
+    table.add_column("Package")
+    table.add_column("Version", overflow="fold")
+    table.add_column("Status")
+    for family, release, srcname, version, status in rows:
+        style = STATUS_STYLES.get(status, "dim" if status.startswith("base: ") else None)
+        table.add_row(family.upper() if family == "lmde" else family.capitalize(), release, srcname, version, status, style=style)
+    Console().print(table)
+
+def main():
+    parser = argparse.ArgumentParser(description="Show the version of a package across distributions, using repology.org and the Mint repositories.")
+    parser.add_argument("package", help="package name (Debian source or binary name, or a repology project name)")
+    parser.add_argument("-a", "--all", action="store_true", help="show every repository repology tracks, not just %s" % ", ".join(DEFAULT_FAMILIES))
+    args = parser.parse_args()
+
+    apt_pkg.init_system()
+
+    try:
+        packages = find_packages(args.package)
+        rows = mint_rows(debian_names(packages) | {args.package}) + collect_rows(packages, args.all)
+    except requests.RequestException as e:
+        sys.exit("Failed to query package indexes: %s" % e)
+
+    if not packages and all(not row[3] for row in rows):
+        sys.exit("No package found for '%s'" % args.package)
+    print_table(args.package, rows)
+
+if __name__ == "__main__":
+    main()

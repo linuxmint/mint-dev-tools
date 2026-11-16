@@ -4,6 +4,7 @@ import sys
 import os
 import tempfile
 import argparse
+import subprocess
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -22,6 +23,20 @@ def call(command):
         console.print("[bold red]Command failed[/bold red] (exit code %d)" % return_code)
         console.print(Panel(Text(command), border_style="red"))
         sys.exit(1)
+
+GITHUB_ORGANIZATIONS = ["linuxmint", "xapp-project"]
+
+def find_project_url(project_name):
+    # If only a name is given, use the first GitHub organization which hosts it
+    for organization in GITHUB_ORGANIZATIONS:
+        url = "https://github.com/%s/%s.git" % (organization, project_name)
+        result = subprocess.run(["git", "ls-remote", "--exit-code", "--heads", url],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                env=dict(os.environ, GIT_TERMINAL_PROMPT="0"))
+        if result.returncode == 0:
+            return url
+    console.print("[bold red]Project %s not found[/bold red] (tried: %s)" % (project_name, ", ".join(GITHUB_ORGANIZATIONS)))
+    sys.exit(1)
 
 def install():
     heading("Installing packages")
@@ -84,9 +99,8 @@ if args.git_repository is not None:
     if "://" in project_url or "@" in project_url:
         project_name = project_url.split("/")[-1].replace(".git", "")
     else:
-        # If only a name is given, assume the URL is on Linux Mint's github
         project_name = project_url
-        project_url = "https://github.com/linuxmint/%s.git" % project_name
+        project_url = find_project_url(project_name)
     call("mkdir -p %s" % project_name)
 
     if args.temporary:

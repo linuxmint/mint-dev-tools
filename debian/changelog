@@ -1,3 +1,9 @@
+mint-dev-tools (1.6.1) adrien; urgency=medium
+
+  * mint-build: Fallback to xapp-project when a project isn't in linuxmint
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 16 Nov 2026 15:44:50 +0000
+
 mint-dev-tools (1.6.0) adrien; urgency=medium
 
   [ Michael Webster ]

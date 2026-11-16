@@ -1,3 +1,13 @@
+mint-dev-tools (1.6.0) adrien; urgency=medium
+
+  [ Michael Webster ]
+  * Add mint-get-dist-versions
+
+  [ Clement Lefebvre ]
+  * mint-check-translations: Add more RTL to UNSUPPORTED_LOCALES
+
+ -- Clement Lefebvre <root@linuxmint.com>  Mon, 16 Nov 2026 12:28:22 +0000
+
 mint-dev-tools (1.5.9) adrien; urgency=medium
 
   [ Michael Webster ]
